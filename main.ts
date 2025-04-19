@@ -1,20 +1,28 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { EditorView, ViewUpdate, DecorationSet, Decoration, ViewPlugin } from '@codemirror/view';
+import { syntaxTree } from '@codemirror/language';
+import { RangeSetBuilder } from '@codemirror/state';
 
 // Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
-	mySetting: string;
+interface DoomsidianSettings {
+	ignoreH1: boolean;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+const DEFAULT_SETTINGS: DoomsidianSettings = {
+	ignoreH1: false
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class DoomsidianPlugin extends Plugin {
+	settings: DoomsidianSettings;
 
 	async onload() {
 		await this.loadSettings();
+
+		// Register the header indentation extension
+		this.registerEditorExtension([
+			this.headerIndentationExtension()
+		]);
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
@@ -65,8 +73,8 @@ export default class MyPlugin extends Plugin {
 			}
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		// Add the settings tab
+		this.addSettingTab(new DoomsidianSettingTab(this.app, this));
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
@@ -88,6 +96,61 @@ export default class MyPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		// Refresh all markdown views to apply new settings
+		this.app.workspace.updateOptions();
+	}
+
+	/**
+	 * Creates a CodeMirror view plugin that adds indentation to headers based on their level.
+	 * The indentation is implemented using CSS padding to maintain clean markdown source.
+	 */
+	private headerIndentationExtension() {
+		const plugin = this;
+		return ViewPlugin.fromClass(class {
+			decorations: DecorationSet;
+
+			constructor(view: EditorView) {
+				this.decorations = this.buildDecorations(view);
+			}
+
+			update(update: ViewUpdate) {
+				if (update.docChanged || update.viewportChanged) {
+					this.decorations = this.buildDecorations(update.view);
+				}
+			}
+
+			buildDecorations(view: EditorView) {
+				const builder = new RangeSetBuilder<Decoration>();
+
+				for (const { from, to } of view.visibleRanges) {
+					syntaxTree(view.state).iterate({
+						from,
+						to,
+						enter: (node) => {
+							if (node.type.name.startsWith('HyperMD-header')) {
+								const headerLevel = parseInt(node.type.name.slice(-1));
+								if (headerLevel && (!plugin.settings.ignoreH1 || headerLevel > 1)) {
+									const indent = (headerLevel - 1) * 20;
+									builder.add(
+										node.from,
+										node.to,
+										Decoration.line({
+											attributes: {
+												style: `padding-left: ${indent}px`
+											}
+										})
+									);
+								}
+							}
+						}
+					});
+				}
+
+				return builder.finish();
+			}
+		}, {
+			decorations: v => v.decorations
+		});
 	}
 }
 
@@ -97,37 +160,38 @@ class SampleModal extends Modal {
 	}
 
 	onOpen() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.setText('Woah!');
 	}
 
 	onClose() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.empty();
 	}
 }
 
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+class DoomsidianSettingTab extends PluginSettingTab {
+	plugin: DoomsidianPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: DoomsidianPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
+		containerEl.createEl('h2', { text: 'Doomsidian Settings' });
+
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+			.setName('Ignore H1 Headers')
+			.setDesc('When enabled, H1 headers will not be indented, keeping them at the leftmost position.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.ignoreH1)
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.ignoreH1 = value;
 					await this.plugin.saveSettings();
 				}));
 	}

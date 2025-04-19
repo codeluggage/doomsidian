@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "doomsidian",
+	"name": "Doomsidian",
 	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
+	"minAppVersion": "1.0.0",
+	"description": "Automatically indents headers based on their level (H1-H6) for better visual hierarchy",
+	"author": "Your Name",
+	"authorUrl": "https://github.com/yourusername",
 	"fundingUrl": "https://obsidian.md/pricing",
 	"isDesktopOnly": false
 }
