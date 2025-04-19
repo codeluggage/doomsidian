@@ -1,0 +1,11 @@
+#+title: Sample
+
+* Outermost
+Link to [[id:9e7f4a57-e692-4835-9b14-77773d79d2da][Emacs]] file.
+Link to [[https://www.gnu.org/software/emacs/][emacs website]].
+
+
+** Second level
+*** ﻿﻿Third level
+**** ﻿﻿Fourth level  
+At the fourth level, text is still visually indented.
