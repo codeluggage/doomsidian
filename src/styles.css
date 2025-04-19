@@ -1,0 +1,32 @@
+/* Force consistent font size throughout the document */
+.cm-content {
+    font-size: 14px !important;  /* Use !important to override Obsidian's defaults */
+    line-height: 1.5 !important;
+}
+
+/* Make headers bold but keep same size */
+.cm-header {
+    font-size: inherit !important;
+    font-weight: 600 !important;
+    color: var(--text-normal);
+}
+
+/* Hide hashtags structurally but allow theme to control visibility */
+.header-hashtag-hidden {
+    opacity: 0;  /* Use opacity instead of color:transparent to work with any theme */
+    user-select: none;
+}
+
+/* Style the bullet points */
+.header-bullet {
+    display: inline-block;
+    width: 1ch;  /* Match hashtag width */
+    text-align: center;
+    user-select: none;  /* Prevent selection of bullets */
+}
+
+/* Ensure consistent spacing and structure */
+.cm-line {
+    font-variant-ligatures: none;  /* Prevent ligatures from affecting spacing */
+    font-feature-settings: "zero" 0;  /* Ensure monospace numbers */
+} 

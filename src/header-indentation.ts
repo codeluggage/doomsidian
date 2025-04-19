@@ -24,8 +24,27 @@ export interface HeaderIndentationSettings {
 	indentationWidth: number;
 }
 
-// Unicode bullet symbols for different header levels
-const HEADER_BULLETS = ['◉', '○', '✱', '✸', '◇', '▶'];
+// Unicode bullet symbols for different header levels - selected for consistent width
+const HEADER_BULLETS = ['•', '•', '•', '•', '•', '•'];  // Using the same bullet for consistency
+
+class BulletWidget extends WidgetType {
+	constructor(private bullet: string) {
+		super();
+	}
+
+	toDOM() {
+		const span = document.createElement('span');
+		span.textContent = this.bullet;
+		span.className = 'header-bullet';
+		return span;
+	}
+
+	eq(other: BulletWidget) {
+		return other.bullet === this.bullet;
+	}
+
+	get estimatedHeight() { return 1; }
+}
 
 export function headerIndentation(settings: HeaderIndentationSettings): Extension {
 	return [
@@ -70,39 +89,39 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 					// Check if line is a header
 					const headerMatch = text.match(/^(#+)\s/);
 					if (headerMatch) {
-						currentHeaderLevel = headerMatch[1].length;
-						if (settings.ignoreH1Headers && currentHeaderLevel === 1) {
+						const hashtagCount = headerMatch[1].length;
+
+						// Skip H1 headers if configured
+						if (settings.ignoreH1Headers && hashtagCount === 1) {
 							currentHeaderLevel = 0;
 							continue;
 						}
 
-						const hashtagCount = headerMatch[1].length;
-						const indentWidth = (hashtagCount - 1) * settings.indentationWidth;
+						currentHeaderLevel = hashtagCount;
+						const hashtagsStart = line.from;
+						const hashtagsEnd = hashtagsStart + hashtagCount;
 
-						// Add line decoration for the header
-						decorations.push({
-							from: line.from,
-							to: line.from,
-							value: Decoration.line({
-								attributes: {
-									class: `header-level-${hashtagCount}`,
-									style: `padding-left: ${indentWidth}ch`
-								}
-							})
-						});
+						if (hashtagCount > 1) {
+							// Make all but the last hashtag invisible by matching background color
+							decorations.push(Decoration.mark({
+								class: 'header-hashtag-hidden'
+							}).range(hashtagsStart, hashtagsEnd - 1));
+
+							// Replace the last hashtag with a bullet
+							const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
+							decorations.push(Decoration.replace({
+								widget: new BulletWidget(HEADER_BULLETS[bulletIndex])
+							}).range(hashtagsEnd - 1, hashtagsEnd));
+						}
 
 					} else if (text.trim() && currentHeaderLevel > 0) {
 						// Add indentation for non-empty lines under headers
-						const indentWidth = (currentHeaderLevel - 1) * settings.indentationWidth;
-						decorations.push({
-							from: line.from,
-							to: line.from,
-							value: Decoration.line({
-								attributes: {
-									style: `padding-left: ${indentWidth}ch`
-								}
-							})
-						});
+						const indentWidth = currentHeaderLevel * settings.indentationWidth;
+						decorations.push(Decoration.line({
+							attributes: {
+								style: `padding-left: ${indentWidth}ch`
+							}
+						}).range(line.from));
 					}
 				}
 

@@ -1,0 +1,64 @@
+/* Doom One Theme */
+
+/* Base colors from Doom Emacs One theme */
+:root {
+    --doom-bg: #282c34;
+    --doom-fg: #bbc2cf;
+    --doom-highlight: #51afef;
+    --doom-subtle: #3f444a;
+    --doom-header: #c678dd;
+    --doom-string: #98be65;
+    --doom-comment: #5B6268;
+}
+
+/* Basic theme overrides */
+.theme-dark {
+    --background-primary: var(--doom-bg);
+    --text-normal: var(--doom-fg);
+    --text-muted: var(--doom-comment);
+    --text-faint: var(--doom-subtle);
+}
+
+/* Header styling */
+.cm-header {
+    color: var(--doom-header) !important;
+    font-family: var(--font-monospace);
+    font-weight: 600;
+    font-size: var(--font-text-size);
+    line-height: var(--line-height-normal);
+}
+
+/* Header bullets (from our plugin) */
+.header-bullet {
+    color: var(--doom-subtle);
+    opacity: 0.8;
+}
+
+/* General editor styling */
+.cm-content {
+    font-family: var(--font-monospace);
+    font-size: var(--font-text-size);
+    line-height: var(--line-height-normal);
+}
+
+/* Code blocks */
+.cm-line:not(.cm-header) .cm-hmd-codeblock {
+    color: var(--doom-string);
+}
+
+/* Comments */
+.cm-comment {
+    color: var(--doom-comment) !important;
+    font-style: italic;
+}
+
+/* Links */
+.cm-url, .cm-link {
+    color: var(--doom-highlight) !important;
+    text-decoration: none;
+}
+
+/* Selection */
+.cm-selectionBackground {
+    background-color: var(--doom-subtle) !important;
+} 
