@@ -77,47 +77,29 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						}
 
 						const hashtagCount = headerMatch[1].length;
-						const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
-						const bullet = HEADER_BULLETS[bulletIndex];
+						const indentWidth = (hashtagCount - 1) * settings.indentationWidth;
 
-						// Line decoration comes first (lower startSide)
+						// Add line decoration for the header
 						decorations.push({
 							from: line.from,
 							to: line.from,
 							value: Decoration.line({
 								attributes: {
-									style: `padding-left: ${hashtagCount * settings.indentationWidth + 1}ch`
+									class: `header-level-${hashtagCount}`,
+									style: `padding-left: ${indentWidth}ch`
 								}
-							})
-						});
-
-						// Widget comes second (higher startSide)
-						decorations.push({
-							from: line.from,
-							to: line.from,
-							value: Decoration.widget({
-								widget: new class extends WidgetType {
-									toDOM() {
-										const span = document.createElement('span');
-										span.textContent = bullet + ' ';
-										span.style.position = 'absolute';
-										span.style.left = '0';
-										span.style.marginLeft = `${(hashtagCount - 1) * settings.indentationWidth}ch`;
-										return span;
-									}
-								},
-								side: 1
 							})
 						});
 
 					} else if (text.trim() && currentHeaderLevel > 0) {
 						// Add indentation for non-empty lines under headers
+						const indentWidth = (currentHeaderLevel - 1) * settings.indentationWidth;
 						decorations.push({
 							from: line.from,
 							to: line.from,
 							value: Decoration.line({
 								attributes: {
-									style: `padding-left: ${currentHeaderLevel * settings.indentationWidth + 1}ch`
+									style: `padding-left: ${indentWidth}ch`
 								}
 							})
 						});

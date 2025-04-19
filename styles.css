@@ -6,3 +6,38 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+/* Headers */
+.cm-header {
+    font-size: 1em !important; /* Keep all headers the same size */
+}
+
+/* Make hashtags the same color as the background */
+.cm-header-1::before,
+.cm-header-2::before,
+.cm-header-3::before,
+.cm-header-4::before,
+.cm-header-5::before,
+.cm-header-6::before {
+    color: var(--background-primary);
+}
+
+/* Add bullet points */
+.header-level-1::before { content: "◉"; }
+.header-level-2::before { content: "○"; }
+.header-level-3::before { content: "✱"; }
+.header-level-4::before { content: "✸"; }
+.header-level-5::before { content: "◇"; }
+.header-level-6::before { content: "▶"; }
+
+/* Position bullet points */
+[class^="header-level-"]::before {
+    position: absolute;
+    left: 0;
+    color: var(--text-normal);
+}
+
+/* Ensure proper spacing */
+.cm-line {
+    position: relative;
+}
