@@ -71,6 +71,44 @@ To maintain visual stability in the editor:
 3. Cache computed values where possible
 4. Consider using `WeakMap` for storing decoration-related data
 
+### Testing DOM Operations
+
+When testing CodeMirror's DOM operations:
+
+1. `view.domAtPos()` returns a `NodeView` object, not a direct DOM node. You need to:
+   ```typescript
+   // Wrong:
+   const node = view.domAtPos(pos).node as HTMLElement;
+   expect(node).toHaveStyle(...);  // Will fail
+
+   // Correct:
+   const nodeView = view.domAtPos(pos);
+   const domNode = nodeView.node.parentElement;  // Get actual DOM element
+   expect(domNode).toHaveStyle(...);
+   ```
+
+2. For finding CodeMirror-specific elements:
+   ```typescript
+   // Wrong:
+   element.querySelector('.cm-line');
+
+   // Correct:
+   view.dom.querySelector('.cm-line');  // Search from editor root
+   ```
+
+3. Jest DOM testing setup:
+   ```typescript
+   // In jest setup file:
+   import '@testing-library/jest-dom';  // For toHaveStyle and other DOM matchers
+   ```
+
+4. When testing decorations, verify their presence in the decoration set rather than the DOM:
+   ```typescript
+   const decorations = view.decorations;
+   expect(decorations.size).toBeGreaterThan(0);
+   // Check specific decoration properties
+   ```
+
 ## Plugin Architecture
 
 ### State Management
