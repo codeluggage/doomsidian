@@ -1,8 +1,8 @@
 {
-    "name": "Doom One",
-    "version": "1.0.0",
-    "minAppVersion": "0.16.0",
-    "author": "Your Name",
-    "authorUrl": "https://github.com/yourusername",
-    "description": "A theme inspired by Doom Emacs, designed to work with the Doomsidian plugin"
+	"name": "DoomOne",
+	"version": "1.0.0",
+	"minAppVersion": "1.6.1",
+	"author": "Matias Forbord",
+	"authorUrl": "https://github.com/codeluggage",
+	"description": "A theme inspired by Doom Emacs, designed to work with the Doomsidian plugin"
 }
