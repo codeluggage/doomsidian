@@ -1,5 +1,13 @@
 # Doomsidian Development Notes
 
+## Test Environment
+
+The project includes a test vault at `test-vault/` that contains sample content for testing various features. This vault is used for:
+- Testing markdown rendering and formatting
+- Verifying header indentation behavior
+- Testing tag-related features
+- Other plugin functionality testing
+
 ## CodeMirror Gotchas and Best Practices
 
 ### Decoration Ordering
