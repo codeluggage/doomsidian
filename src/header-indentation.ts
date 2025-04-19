@@ -1,10 +1,19 @@
-import { Extension } from '@codemirror/state';
+import { Extension, StateEffect } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from '@codemirror/view';
 import { Range, StateField } from '@codemirror/state';
+
+// Define the effect type for updating decorations
+const updateDecorations = StateEffect.define<DecorationSet>();
 
 export const headerIndentationField = StateField.define<DecorationSet>({
 	create() { return Decoration.none },
 	update(decorations, tr) {
+		// Apply any decoration updates from effects
+		for (let e of tr.effects) {
+			if (e.is(updateDecorations)) {
+				return e.value;
+			}
+		}
 		return decorations.map(tr.changes);
 	},
 	provide: f => EditorView.decorations.from(f)
@@ -26,9 +35,11 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 		headerIndentationField,
 		ViewPlugin.fromClass(class {
 			constructor(view: EditorView) {
-				// Initialize the state field with computed decorations
-				view.dispatch({
-					effects: headerIndentationField.update.of(this.computeDecorations(view))
+				// Schedule initial update for next frame to avoid update during initialization
+				requestAnimationFrame(() => {
+					view.dispatch({
+						effects: updateDecorations.of(this.computeDecorations(view))
+					});
 				});
 			}
 
@@ -36,7 +47,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				if (update.docChanged || update.viewportChanged) {
 					// Update the state field with new decorations
 					update.view.dispatch({
-						effects: headerIndentationField.update.of(this.computeDecorations(update.view))
+						effects: updateDecorations.of(this.computeDecorations(update.view))
 					});
 				}
 			}
