@@ -1,0 +1,11 @@
+{
+  "promptDelete": false,
+  "readableLineLength": false,
+  "showIndentGuide": true,
+  "tabSize": 2,
+  "useTab": false,
+  "vimMode": true,
+  "alwaysUpdateLinks": true,
+  "showUnsupportedFiles": true,
+  "showInlineTitle": false
+}

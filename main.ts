@@ -1,5 +1,5 @@
 import { Plugin, MarkdownView } from 'obsidian';
-import { headerIndentation, HeaderIndentationSettings } from './header-indentation';
+import { headerIndentation, HeaderIndentationSettings } from './src/header-indentation';
 
 interface DoomsidianSettings {
 	headerIndentation: HeaderIndentationSettings;

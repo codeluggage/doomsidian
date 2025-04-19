@@ -1,0 +1,26 @@
+/* Simplified Doom Emacs-inspired indentation */
+:root {
+  --header-indent: 1.2em;
+}
+
+/* Basic header colors from Doom */
+.HyperMD-header-1 { color: #51afef; }
+.HyperMD-header-2 { color: #c678dd; }
+.HyperMD-header-3 { color: #a9a1e1; }
+.HyperMD-header-4 { color: #98be65; }
+.HyperMD-header-5 { color: #da8548; }
+.HyperMD-header-6 { color: #ff6c6b; }
+
+/* Make all headers the same font size */
+.markdown-source-view.mod-cm6 .cm-content .HyperMD-header {
+  font-size: var(--font-text-size) !important;
+  font-weight: 600;
+}
+
+/* Basic indentation levels */
+.markdown-source-view.mod-cm6 .cm-content .HyperMD-header-1 { padding-left: calc(1 * var(--header-indent)); }
+.markdown-source-view.mod-cm6 .cm-content .HyperMD-header-2 { padding-left: calc(2 * var(--header-indent)); }
+.markdown-source-view.mod-cm6 .cm-content .HyperMD-header-3 { padding-left: calc(3 * var(--header-indent)); }
+.markdown-source-view.mod-cm6 .cm-content .HyperMD-header-4 { padding-left: calc(4 * var(--header-indent)); }
+.markdown-source-view.mod-cm6 .cm-content .HyperMD-header-5 { padding-left: calc(5 * var(--header-indent)); }
+.markdown-source-view.mod-cm6 .cm-content .HyperMD-header-6 { padding-left: calc(6 * var(--header-indent)); }
