@@ -10,5 +10,14 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^obsidian$': '<rootDir>/src/__mocks__/obsidian.ts'
   },
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.json',
+      diagnostics: {
+        ignoreCodes: [151001]
+      }
+    }
+  }
 }; 
