@@ -1,5 +1,6 @@
 import { Extension } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view';
+import { Range } from '@codemirror/state';
 
 export interface HeaderIndentationSettings {
 	ignoreH1Headers: boolean;
@@ -21,7 +22,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 		}
 
 		computeDecorations(view: EditorView): DecorationSet {
-			const decorations: any[] = [];
+			const decorations: Range<Decoration>[] = [];
 			const doc = view.state.doc;
 			let currentHeaderLevel = 0;
 
@@ -42,7 +43,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 					decorations.push(
 						Decoration.line({
 							attributes: {
-								style: `text-indent: ${indent.length}ch; white-space: pre;`
+								style: `text-indent: ${indent.length}ch`
 							}
 						}).range(line.from)
 					);
