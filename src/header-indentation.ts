@@ -79,38 +79,38 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
 						const bullet = HEADER_BULLETS[bulletIndex];
 
-						// If there are preceding hashtags, make them background colored
-						if (hashtagCount > 1) {
-							decorations.push(
-								Decoration.mark({
-									attributes: {
-										style: "color: var(--background-primary)"
-									}
-								}).range(line.from, line.from + hashtagCount - 1)
-							);
-						}
-
-						// Replace only the last hashtag with our bullet
+						// Add the bullet point widget at the start of the line
 						decorations.push(
-							Decoration.replace({
+							Decoration.widget({
 								widget: new class extends WidgetType {
 									toDOM() {
 										const span = document.createElement('span');
-										span.textContent = bullet;
+										span.textContent = bullet + ' ';
+										span.style.position = 'absolute';
+										span.style.left = '0';
+										span.style.marginLeft = `${(hashtagCount - 1) * settings.indentationWidth}ch`;
 										return span;
 									}
+								},
+								side: -1
+							}).range(line.from)
+						);
+
+						// Add a wrapper for the entire header line
+						decorations.push(
+							Decoration.line({
+								attributes: {
+									style: `padding-left: ${hashtagCount * settings.indentationWidth + 1}ch`
 								}
-							}).range(line.from + hashtagCount - 1, line.from + hashtagCount)
+							}).range(line.from)
 						);
 
 					} else if (text.trim() && currentHeaderLevel > 0) {
 						// Add indentation for non-empty lines under headers
-						// Use the exact width of hashtags + space for indentation
-						const indentWidth = currentHeaderLevel + 1; // +1 for the space after hashtags
 						decorations.push(
 							Decoration.line({
 								attributes: {
-									style: `padding-left: ${indentWidth}ch`
+									style: `padding-left: ${currentHeaderLevel * settings.indentationWidth + 1}ch`
 								}
 							}).range(line.from)
 						);
