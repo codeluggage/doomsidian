@@ -115,7 +115,7 @@ Content 3`;
 			const doc = '# Document Title\nContent under title\n## Section\nContent under section';
 			view.setState(EditorState.create({
 				doc,
-				extensions: view.state.extensions
+				extensions: [markdown(), headerIndentation({ ...defaultSettings, ignoreH1Headers: false })]
 			}));
 
 			const titleContent = view.domAtPos(15).node as HTMLElement;
@@ -142,7 +142,7 @@ Content 3`;
 			const doc = '# Document Title\nContent under title';
 			view.setState(EditorState.create({
 				doc,
-				extensions: view.state.extensions
+				extensions: [markdown(), headerIndentation({ ...defaultSettings, ignoreH1Headers: false })]
 			}));
 
 			const titleContent = view.domAtPos(15).node as HTMLElement;
@@ -155,7 +155,7 @@ Content 3`;
 			const doc = '## Header\nContent';
 			view.setState(EditorState.create({
 				doc,
-				extensions: view.state.extensions
+				extensions: [markdown(), headerIndentation({ ...defaultSettings, ignoreH1Headers: false })]
 			}));
 
 			const line = view.domAtPos(0).node as HTMLElement;
@@ -169,7 +169,7 @@ Content 3`;
 			const doc = '#### Deep Header\nContent';
 			view.setState(EditorState.create({
 				doc,
-				extensions: view.state.extensions
+				extensions: [markdown(), headerIndentation({ ...defaultSettings, ignoreH1Headers: false })]
 			}));
 
 			const line = view.domAtPos(0).node as HTMLElement;
@@ -185,7 +185,7 @@ Content 3`;
 			const doc = '## Header\nContent line';
 			view.setState(EditorState.create({
 				doc,
-				extensions: view.state.extensions
+				extensions: [markdown(), headerIndentation({ ...defaultSettings, ignoreH1Headers: false })]
 			}));
 
 			const contentLine = view.domAtPos(10).node as HTMLElement;
@@ -198,7 +198,7 @@ Content 3`;
 			const doc = '## Level 2\nContent 2\n### Level 3\nContent 3';
 			view.setState(EditorState.create({
 				doc,
-				extensions: view.state.extensions
+				extensions: [markdown(), headerIndentation({ ...defaultSettings, ignoreH1Headers: false })]
 			}));
 
 			const content2 = view.domAtPos(12).node as HTMLElement;
@@ -212,7 +212,7 @@ Content 3`;
 			const doc = '## Level 2\nContent 2\n##### Level 5\nContent 5';
 			view.setState(EditorState.create({
 				doc,
-				extensions: view.state.extensions
+				extensions: [markdown(), headerIndentation({ ...defaultSettings, ignoreH1Headers: false })]
 			}));
 
 			const content5 = view.domAtPos(32).node as HTMLElement;
@@ -225,7 +225,7 @@ Content 3`;
 			const doc = '##not-a-header\nContent';
 			view.setState(EditorState.create({
 				doc,
-				extensions: view.state.extensions
+				extensions: [markdown(), headerIndentation({ ...defaultSettings, ignoreH1Headers: false })]
 			}));
 
 			const line = view.domAtPos(0).node as HTMLElement;
@@ -236,7 +236,7 @@ Content 3`;
 			const doc = '##\nContent';
 			view.setState(EditorState.create({
 				doc,
-				extensions: view.state.extensions
+				extensions: [markdown(), headerIndentation({ ...defaultSettings, ignoreH1Headers: false })]
 			}));
 
 			const contentLine = view.domAtPos(4).node as HTMLElement;
@@ -247,7 +247,7 @@ Content 3`;
 			const doc = '## Header\n- List item\n  - Nested item';
 			view.setState(EditorState.create({
 				doc,
-				extensions: view.state.extensions
+				extensions: [markdown(), headerIndentation({ ...defaultSettings, ignoreH1Headers: false })]
 			}));
 
 			const listItem = view.domAtPos(11).node as HTMLElement;
