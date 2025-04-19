@@ -34,22 +34,30 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 	return [
 		headerIndentationField,
 		ViewPlugin.fromClass(class {
+			private updateScheduled = false;
+
 			constructor(view: EditorView) {
-				// Schedule initial update for next frame to avoid update during initialization
-				requestAnimationFrame(() => {
-					view.dispatch({
-						effects: updateDecorations.of(this.computeDecorations(view))
-					});
-				});
+				this.scheduleUpdate(view);
 			}
 
 			update(update: ViewUpdate) {
 				if (update.docChanged || update.viewportChanged) {
-					// Update the state field with new decorations
-					update.view.dispatch({
-						effects: updateDecorations.of(this.computeDecorations(update.view))
-					});
+					this.scheduleUpdate(update.view);
 				}
+			}
+
+			private scheduleUpdate(view: EditorView) {
+				if (this.updateScheduled) return;
+				this.updateScheduled = true;
+
+				Promise.resolve().then(() => {
+					this.updateScheduled = false;
+					if (!view.state) return; // View was destroyed
+
+					view.dispatch({
+						effects: updateDecorations.of(this.computeDecorations(view))
+					});
+				});
 			}
 
 			computeDecorations(view: EditorView): DecorationSet {
