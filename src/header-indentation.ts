@@ -62,6 +62,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				const doc = view.state.doc;
 				let currentHeaderLevel = 0;
 
+				// First pass: collect all decorations
 				for (let i = 1; i <= doc.lines; i++) {
 					const line = doc.line(i);
 					const text = line.text;
@@ -79,9 +80,22 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
 						const bullet = HEADER_BULLETS[bulletIndex];
 
-						// Add the bullet point widget at the start of the line
-						decorations.push(
-							Decoration.widget({
+						// Line decoration comes first (lower startSide)
+						decorations.push({
+							from: line.from,
+							to: line.from,
+							value: Decoration.line({
+								attributes: {
+									style: `padding-left: ${hashtagCount * settings.indentationWidth + 1}ch`
+								}
+							})
+						});
+
+						// Widget comes second (higher startSide)
+						decorations.push({
+							from: line.from,
+							to: line.from,
+							value: Decoration.widget({
 								widget: new class extends WidgetType {
 									toDOM() {
 										const span = document.createElement('span');
@@ -92,30 +106,30 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 										return span;
 									}
 								},
-								side: -1
-							}).range(line.from)
-						);
-
-						// Add a wrapper for the entire header line
-						decorations.push(
-							Decoration.line({
-								attributes: {
-									style: `padding-left: ${hashtagCount * settings.indentationWidth + 1}ch`
-								}
-							}).range(line.from)
-						);
+								side: 1
+							})
+						});
 
 					} else if (text.trim() && currentHeaderLevel > 0) {
 						// Add indentation for non-empty lines under headers
-						decorations.push(
-							Decoration.line({
+						decorations.push({
+							from: line.from,
+							to: line.from,
+							value: Decoration.line({
 								attributes: {
 									style: `padding-left: ${currentHeaderLevel * settings.indentationWidth + 1}ch`
 								}
-							}).range(line.from)
-						);
+							})
+						});
 					}
 				}
+
+				// Sort decorations by from position and startSide
+				decorations.sort((a, b) => {
+					const fromDiff = a.from - b.from;
+					if (fromDiff) return fromDiff;
+					return (a.value.startSide || 0) - (b.value.startSide || 0);
+				});
 
 				return Decoration.set(decorations);
 			}
