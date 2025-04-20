@@ -1,7 +1,6 @@
 import { Extension, StateEffect } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from '@codemirror/view';
 import { Range, StateField, Text } from '@codemirror/state';
-import { syntaxTree } from '@codemirror/language';
 
 // Define the effect type for updating decorations
 const updateDecorations = StateEffect.define<DecorationSet>();
@@ -36,7 +35,8 @@ class BulletWidget extends WidgetType {
 	toDOM() {
 		const span = document.createElement('span');
 		span.textContent = this.bullet;
-		span.className = `cm-header-bullet cm-header-bullet-${this.level}`;
+		span.className = `header-bullet header-bullet-${this.level}`;
+		// Make non-editable to avoid cursor issues
 		span.contentEditable = 'false';
 		return span;
 	}
@@ -52,7 +52,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 	return [
 		headerIndentationField,
 		ViewPlugin.fromClass(class {
-			decorations: DecorationSet = Decoration.none;
+			decorations: DecorationSet;
 			currentSettings: HeaderIndentationSettings;
 
 			constructor(view: EditorView) {
@@ -61,109 +61,69 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 			}
 
 			update(update: ViewUpdate) {
-				let settingsChanged = false;
-				for (const tr of update.transactions) {
-					for (const effect of tr.effects) {
-						if (effect.is(updateSettingsEffect)) {
-							settingsChanged = true;
-							this.currentSettings = effect.value;
-							break;
-						}
-					}
-					if (settingsChanged) break;
-				}
-
-				if (update.docChanged || update.viewportChanged || settingsChanged) {
+				// Basic update check
+				if (update.docChanged || update.viewportChanged) {
 					this.decorations = this.computeDecorations(update.view);
 				}
+				// TODO: Add settings update check if dynamic reconfiguration is needed
 			}
 
 			computeDecorations(view: EditorView): DecorationSet {
 				const decorations: Range<Decoration>[] = [];
 				const doc = view.state.doc;
-				const tree = syntaxTree(view.state);
 				let currentHeaderLevel = 0;
 
 				for (let i = 1; i <= doc.lines; i++) {
 					const line = doc.line(i);
-					if (line.length === 0) continue;
+					const text = line.text;
+					const headerMatch = text.match(/^(#+)\s/);
 
-					let isHeader = false;
-					let isIndentableContent = true;
+					if (headerMatch) {
+						const hashtagCount = headerMatch[1].length;
+						currentHeaderLevel = (this.currentSettings.ignoreH1Headers && hashtagCount === 1) ? 0 : hashtagCount;
 
-					tree.iterate({
-						from: line.from,
-						to: line.from + 1,
-						enter: (node) => {
-							const nodeName = node.type.name;
+						if (currentHeaderLevel > 0) {
+							const hashtagsStart = line.from;
+							const hashtagsEnd = hashtagsStart + hashtagCount;
 
-							if (nodeName.includes('HyperMD-header')) {
-								isHeader = true;
-								const levelMatch = nodeName.match(/header-(\d)/);
-								let hashtagCount = 0;
-								if (levelMatch && levelMatch[1]) {
-									hashtagCount = parseInt(levelMatch[1], 10);
-								} else {
-									const headerTextMatch = line.text.match(/^(#+)\s/);
-									if (headerTextMatch) {
-										hashtagCount = headerTextMatch[1].length;
-									}
-								}
+							// Add indentation for the header line itself (optional, adjust as needed)
+							// const headerIndent = (hashtagCount - 1) * this.currentSettings.indentationWidth;
+							// if (headerIndent > 0) {
+							// 	decorations.push(Decoration.line({
+							// 		attributes: {
+							// 			style: `padding-left: ${headerIndent}ch`
+							// 		}
+							// 	}).range(line.from));
+							// }
 
-								if (hashtagCount > 0) {
-									const calculatedLevel = (this.currentSettings.ignoreH1Headers && hashtagCount === 1) ? 0 : hashtagCount;
-									currentHeaderLevel = calculatedLevel;
+							// Hide all hashtags
+							decorations.push(Decoration.mark({
+								class: 'header-hashtag-hidden'
+							}).range(hashtagsStart, hashtagsEnd));
 
-									if (calculatedLevel > 0) {
-										const hashtagsStart = line.from;
-										const headerMarkEnd = hashtagsStart + hashtagCount + (line.text[hashtagCount] === ' ' ? 1 : 0);
-
-										decorations.push(Decoration.replace({
-											attributes: { class: 'cm-header-hashtag-hidden' }
-										}).range(hashtagsStart, headerMarkEnd));
-
-										const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
-										decorations.push(Decoration.widget({
-											widget: new BulletWidget(HEADER_BULLETS[bulletIndex], hashtagCount),
-											side: -1
-										}).range(hashtagsStart));
-									}
-								}
-								return false;
-							}
-
-							if (nodeName.includes('List') ||
-								nodeName.includes('Quote') ||
-								nodeName.includes('Code') ||
-								nodeName === 'HorizontalRule' ||
-								nodeName === 'Task' || nodeName === 'TaskMarker' ||
-								nodeName === 'CommentBlock' || nodeName === 'Comment' ||
-								nodeName === 'Table' || nodeName.includes('table-sep')
-							) {
-								isIndentableContent = false;
-								return false;
-							}
+							// Add bullet point at the start
+							const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
+							decorations.push(Decoration.widget({
+								widget: new BulletWidget(HEADER_BULLETS[bulletIndex], hashtagCount),
+								side: -1 // Place before other decorations at the same position
+							}).range(hashtagsStart));
 						}
-					});
 
-					if (!isHeader && isIndentableContent && currentHeaderLevel > 0) {
-						const indentClass = `cm-line-indent-${currentHeaderLevel}`;
+					} else if (text.trim() && currentHeaderLevel > 0) {
+						// Add indentation for non-empty lines under headers using inline style
+						const indentWidth = currentHeaderLevel * this.currentSettings.indentationWidth;
 						decorations.push(Decoration.line({
-							attributes: { class: indentClass }
+							attributes: { style: `padding-left: ${indentWidth}ch` }
 						}).range(line.from));
 					}
 				}
 
-				decorations.sort((a, b) => {
-					const fromDiff = a.from - b.from;
-					if (fromDiff !== 0) return fromDiff;
-					return (a.value.spec.side || 0) - (b.value.spec.side || 0);
-				});
-
+				// Let Decoration.set handle sorting by passing `true`
 				return Decoration.set(decorations, true);
 			}
 		})
 	];
 }
 
+// Effect for potential dynamic setting updates (if needed later)
 export const updateSettingsEffect = StateEffect.define<HeaderIndentationSettings>(); 
