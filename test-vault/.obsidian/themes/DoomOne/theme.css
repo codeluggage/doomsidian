@@ -1,64 +1,166 @@
-/* Doom One Theme */
+/* Doom One Theme - Based on the original doom-one-theme.el */
+
+/* Force consistent sizing throughout using Obsidian's native variables */
+body {
+    --file-header-font-size: 14px;
+    --file-header-font-weight: 600;
+    --header-height: var(--file-header-font-size);
+}
+
+/* Target all possible header variations */
+.cm-content, 
+.cm-line,
+.cm-header,
+.HyperMD-header,
+.HyperMD-header-1,
+.HyperMD-header-2,
+.HyperMD-header-3,
+.HyperMD-header-4,
+.HyperMD-header-5,
+.HyperMD-header-6,
+.cm-header-1,
+.cm-header-2,
+.cm-header-3,
+.cm-header-4,
+.cm-header-5,
+.cm-header-6 {
+    font-size: var(--file-header-font-size) !important;
+    line-height: 1.5 !important;
+    font-family: var(--font-monospace) !important;
+}
 
 /* Base colors from Doom Emacs One theme */
 :root {
+    /* Core colors from doom-one */
     --doom-bg: #282c34;
+    --doom-bg-alt: #21242b;
+    --doom-base0: #1B2229;
+    --doom-base1: #1c1f24;
+    --doom-base2: #202328;
+    --doom-base3: #23272e;
+    --doom-base4: #3f444a;
+    --doom-base5: #5B6268;
+    --doom-base6: #73797e;
+    --doom-base7: #9ca0a4;
+    --doom-base8: #DFDFDF;
     --doom-fg: #bbc2cf;
-    --doom-highlight: #51afef;
-    --doom-subtle: #3f444a;
-    --doom-header: #c678dd;
-    --doom-string: #98be65;
-    --doom-comment: #5B6268;
+    
+    /* Syntax colors */
+    --doom-red: #ff6c6b;
+    --doom-orange: #da8548;
+    --doom-green: #98be65;
+    --doom-teal: #4db5bd;
+    --doom-yellow: #ECBE7B;
+    --doom-blue: #51afef;
+    --doom-dark-blue: #2257A0;
+    --doom-magenta: #c678dd;
+    --doom-violet: #a9a1e1;
+    --doom-cyan: #46D9FF;
+    --doom-dark-cyan: #5699AF;
 }
 
-/* Basic theme overrides */
+/* Theme overrides */
 .theme-dark {
     --background-primary: var(--doom-bg);
+    --background-primary-alt: var(--doom-bg-alt);
+    --background-secondary: var(--doom-base2);
+    --background-secondary-alt: var(--doom-base3);
+    
     --text-normal: var(--doom-fg);
-    --text-muted: var(--doom-comment);
-    --text-faint: var(--doom-subtle);
+    --text-muted: var(--doom-base5);
+    --text-faint: var(--doom-base4);
+    
+    --text-title: var(--doom-magenta);
+    --text-link: var(--doom-blue);
+    --text-code: var(--doom-green);
+    
+    --interactive-accent: var(--doom-blue);
+    --interactive-accent-hover: var(--doom-dark-blue);
 }
 
-/* Header styling */
-.cm-header {
-    color: var(--doom-header) !important;
-    font-family: var(--font-monospace);
-    font-weight: 600;
-    font-size: var(--font-text-size);
-    line-height: var(--line-height-normal);
+/* Header styling - following org-mode colors but keeping size consistent */
+.HyperMD-header-1, .cm-header-1 {
+    color: var(--doom-magenta) !important;
+    font-weight: var(--file-header-font-weight) !important;
 }
 
-/* Header bullets (from our plugin) */
+.HyperMD-header-2, .cm-header-2 {
+    color: var(--doom-orange) !important;
+    font-weight: var(--file-header-font-weight) !important;
+}
+
+.HyperMD-header-3, .cm-header-3 {
+    color: var(--doom-violet) !important;
+    font-weight: var(--file-header-font-weight) !important;
+}
+
+.HyperMD-header-4, .cm-header-4 {
+    color: var(--doom-green) !important;
+    font-weight: var(--file-header-font-weight) !important;
+}
+
+.HyperMD-header-5, .cm-header-5 {
+    color: var(--doom-cyan) !important;
+    font-weight: var(--file-header-font-weight) !important;
+}
+
+.HyperMD-header-6, .cm-header-6 {
+    color: var(--doom-yellow) !important;
+    font-weight: var(--file-header-font-weight) !important;
+}
+
+/* Header bullets from our plugin */
 .header-bullet {
-    color: var(--doom-subtle);
+    color: var(--doom-base4);
     opacity: 0.8;
+    font-size: var(--file-header-font-size) !important;
 }
 
-/* General editor styling */
-.cm-content {
-    font-family: var(--font-monospace);
-    font-size: var(--font-text-size);
-    line-height: var(--line-height-normal);
+/* Lists - using org-list colors */
+.cm-formatting-list {
+    color: var(--doom-cyan) !important;
+}
+
+/* Emphasis */
+.cm-strong {
+    color: var(--doom-orange);
+    font-weight: bold;
+}
+
+.cm-em {
+    color: var(--doom-green);
+    font-style: italic;
 }
 
 /* Code blocks */
 .cm-line:not(.cm-header) .cm-hmd-codeblock {
-    color: var(--doom-string);
+    color: var(--doom-green);
 }
 
 /* Comments */
 .cm-comment {
-    color: var(--doom-comment) !important;
+    color: var(--doom-base5) !important;
     font-style: italic;
 }
 
 /* Links */
 .cm-url, .cm-link {
-    color: var(--doom-highlight) !important;
+    color: var(--doom-blue) !important;
     text-decoration: none;
 }
 
 /* Selection */
 .cm-selectionBackground {
-    background-color: var(--doom-subtle) !important;
+    background-color: var(--doom-base4) !important;
+}
+
+/* Task lists */
+.task-list-item-checkbox {
+    color: var(--doom-base4);
+}
+
+.is-checked {
+    color: var(--doom-green);
+    text-decoration: line-through;
+    opacity: 0.8;
 } 
