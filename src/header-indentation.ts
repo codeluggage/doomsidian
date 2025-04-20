@@ -52,20 +52,40 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 	return [
 		headerIndentationField,
 		ViewPlugin.fromClass(class {
-			decorations: DecorationSet;
+			decorations: DecorationSet = Decoration.none; // Initialize decorations
 			currentSettings: HeaderIndentationSettings;
+			private updateScheduled = false; // Added from previous version
 
 			constructor(view: EditorView) {
 				this.currentSettings = settings;
-				this.decorations = this.computeDecorations(view);
+				// Don't compute here, scheduleUpdate will handle it
+				this.scheduleUpdate(view);
 			}
 
 			update(update: ViewUpdate) {
-				// Basic update check
-				if (update.docChanged || update.viewportChanged) {
-					this.decorations = this.computeDecorations(update.view);
+				// Only schedule if changes might affect decorations
+				if (update.docChanged || update.viewportChanged || update.geometryChanged) {
+					this.scheduleUpdate(update.view);
 				}
 				// TODO: Add settings update check if dynamic reconfiguration is needed
+			}
+
+			// Added from previous version
+			private scheduleUpdate(view: EditorView) {
+				if (this.updateScheduled) return;
+				this.updateScheduled = true;
+
+				Promise.resolve().then(() => {
+					this.updateScheduled = false;
+					// Check if view state still exists (implies view is not destroyed)
+					if (!view.state) return;
+
+					// Dispatch the computed decorations as an effect
+					const newDecorations = this.computeDecorations(view);
+					view.dispatch({
+						effects: updateDecorations.of(newDecorations)
+					});
+				});
 			}
 
 			computeDecorations(view: EditorView): DecorationSet {
