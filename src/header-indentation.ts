@@ -36,7 +36,8 @@ class BulletWidget extends WidgetType {
 	toDOM() {
 		const span = document.createElement('span');
 		span.textContent = this.bullet;
-		span.className = `header-bullet header-bullet-${this.level}`;
+		span.className = `cm-header-bullet cm-header-bullet-${this.level}`;
+		span.contentEditable = 'false';
 		return span;
 	}
 
@@ -51,120 +52,109 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 	return [
 		headerIndentationField,
 		ViewPlugin.fromClass(class {
-			private updateScheduled = false;
+			decorations: DecorationSet = Decoration.none;
+			currentSettings: HeaderIndentationSettings;
 
 			constructor(view: EditorView) {
-				this.scheduleUpdate(view);
+				this.currentSettings = settings;
+				this.decorations = this.computeDecorations(view);
 			}
 
 			update(update: ViewUpdate) {
-				if (update.docChanged || update.viewportChanged) {
-					this.scheduleUpdate(update.view);
-				}
-			}
-
-			private scheduleUpdate(view: EditorView) {
-				if (this.updateScheduled) return;
-				this.updateScheduled = true;
-
-				Promise.resolve().then(() => {
-					this.updateScheduled = false;
-					if (!view.state) return; // View was destroyed
-
-					view.dispatch({
-						effects: updateDecorations.of(this.computeDecorations(view))
-					});
-				});
-			}
-
-			private findHeaderLevel(doc: Text, lineNo: number): number {
-				// Look backwards to find the nearest header level
-				for (let i = lineNo; i >= 1; i--) {
-					const lineText = doc.line(i).text;
-					const headerMatch = lineText.match(/^(#+)\s/);
-					if (headerMatch) {
-						const level = headerMatch[1].length;
-						if (settings.ignoreH1Headers && level === 1) {
-							return 0;
+				let settingsChanged = false;
+				for (const tr of update.transactions) {
+					for (const effect of tr.effects) {
+						if (effect.is(updateSettingsEffect)) {
+							settingsChanged = true;
+							this.currentSettings = effect.value;
+							break;
 						}
-						// Check if we hit a higher level header
-						if (i < lineNo) {
-							const currentLevel = headerMatch[1].length;
-							for (let j = i + 1; j < lineNo; j++) {
-								const intermediateText = doc.line(j).text;
-								const intermediateMatch = intermediateText.match(/^(#+)\s/);
-								if (intermediateMatch && intermediateMatch[1].length <= currentLevel) {
-									return 0; // Found a header at same or higher level, stop here
-								}
-							}
-						}
-						return level;
 					}
+					if (settingsChanged) break;
 				}
-				return 0;
+
+				if (update.docChanged || update.viewportChanged || settingsChanged) {
+					this.decorations = this.computeDecorations(update.view);
+				}
 			}
 
 			computeDecorations(view: EditorView): DecorationSet {
 				const decorations: Range<Decoration>[] = [];
 				const doc = view.state.doc;
+				const tree = syntaxTree(view.state);
+				let currentHeaderLevel = 0;
 
-				// First pass: collect all decorations
 				for (let i = 1; i <= doc.lines; i++) {
 					const line = doc.line(i);
-					const text = line.text;
-					const headerLevel = this.findHeaderLevel(doc, i);
+					if (line.length === 0) continue;
 
-					// Handle headers
-					const headerMatch = text.match(/^(#+)\s/);
-					if (headerMatch) {
-						const hashtagCount = headerMatch[1].length;
-						if (settings.ignoreH1Headers && hashtagCount === 1) {
-							continue;
+					let isHeader = false;
+					let isIndentableContent = true;
+
+					tree.iterate({
+						from: line.from,
+						to: line.from + 1,
+						enter: (node) => {
+							const nodeName = node.type.name;
+
+							if (nodeName.startsWith('ATXHeading')) {
+								isHeader = true;
+								const headerMatch = line.text.match(/^(#+)\s/);
+								if (headerMatch) {
+									const hashtagCount = headerMatch[1].length;
+									const calculatedLevel = (this.currentSettings.ignoreH1Headers && hashtagCount === 1) ? 0 : hashtagCount;
+									currentHeaderLevel = calculatedLevel;
+
+									if (calculatedLevel > 0) {
+										const hashtagsStart = line.from;
+										const headerMarkEnd = hashtagsStart + hashtagCount + (line.text[hashtagCount] === ' ' ? 1 : 0);
+
+										decorations.push(Decoration.replace({
+											attributes: { class: 'cm-header-hashtag-hidden' }
+										}).range(hashtagsStart, headerMarkEnd));
+
+										const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
+										decorations.push(Decoration.widget({
+											widget: new BulletWidget(HEADER_BULLETS[bulletIndex], hashtagCount),
+											side: -1
+										}).range(hashtagsStart));
+									}
+								}
+								return false;
+							}
+
+							if (nodeName.includes('List') ||
+								nodeName.includes('Quote') ||
+								nodeName.includes('Code') ||
+								nodeName === 'HorizontalRule' ||
+								nodeName === 'Task' || nodeName === 'TaskMarker' ||
+								nodeName === 'CommentBlock' || nodeName === 'Comment' ||
+								nodeName === 'Table'
+							) {
+								isIndentableContent = false;
+								return false;
+							}
 						}
+					});
 
-						const hashtagsStart = line.from;
-						const hashtagsEnd = hashtagsStart + hashtagCount;
-
-						// Hide all hashtags
-						decorations.push(Decoration.mark({
-							class: 'header-hashtag-hidden'
-						}).range(hashtagsStart, hashtagsEnd));
-
-						// Add bullet point at the start
-						const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
-						decorations.push(Decoration.widget({
-							widget: new BulletWidget(HEADER_BULLETS[bulletIndex], hashtagCount),
-							side: -1
-						}).range(hashtagsStart));
-
-					}
-
-					// Add indentation class based on header level
-					if (headerLevel > 0) {
-						// Don't add indentation to the header line itself
-						if (!headerMatch) {
-							const baseClass = 'header-indent';
-							const levelClass = `${baseClass}-${headerLevel}`;
-
-							// Check if this is a list or quote
-							const listMatch = text.match(/^(\s*)([-*+]|\d+\.)\s/);
-							const quoteMatch = text.match(/^(\s*)>/);
-							const taskMatch = text.match(/^(\s*)([-*+]|\d+\.)\s\[[x ]\]\s/i);
-
-							let extraClass = '';
-							if (listMatch) extraClass = ' list-line';
-							if (quoteMatch) extraClass = ' quote-line';
-							if (taskMatch) extraClass = ' task-line';
-
-							decorations.push(Decoration.line({
-								class: levelClass + extraClass
-							}).range(line.from));
-						}
+					if (!isHeader && isIndentableContent && currentHeaderLevel > 0) {
+						const indentClass = `cm-line-indent-${currentHeaderLevel}`;
+						decorations.push(Decoration.line({
+							attributes: { class: indentClass }
+						}).range(line.from));
 					}
 				}
+
+				decorations.sort((a, b) => {
+					const fromDiff = a.from - b.from;
+					if (fromDiff !== 0) return fromDiff;
+					return (a.value.spec.side || 0) - (b.value.spec.side || 0);
+				});
 
 				return Decoration.set(decorations, true);
 			}
 		})
 	];
-} 
+}
+
+export const updateSettingsEffect = StateEffect.define<HeaderIndentationSettings>(); 
