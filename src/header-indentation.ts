@@ -130,7 +130,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						if (headerIndent > 0) {
 							decorations.push(Decoration.line({
 								attributes: {
-									style: `margin-left: ${headerIndent}ch`
+									style: `padding-left: ${headerIndent}ch`
 								}
 							}).range(line.from));
 						}
@@ -148,13 +148,29 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						}).range(hashtagsStart));
 
 					} else if (headerLevel > 0) {
-						// Add base indentation from header level
-						const indentWidth = headerLevel * settings.indentationWidth;
-						decorations.push(Decoration.line({
-							attributes: {
-								style: `margin-left: ${indentWidth}ch`
-							}
-						}).range(line.from));
+						// Calculate base indentation from header level
+						const headerIndent = headerLevel * settings.indentationWidth;
+
+						// Check if this is a blockquote
+						const isQuote = text.match(/^\s*>/);
+						if (isQuote) {
+							// For quotes, we need to preserve the quote marker position
+							// but indent the content
+							decorations.push(Decoration.line({
+								attributes: {
+									style: `padding-left: ${headerIndent}ch`
+								},
+								class: 'quote-line'
+							}).range(line.from));
+						} else {
+							// For regular content and lists, use padding-left
+							// Lists will handle their own additional indentation
+							decorations.push(Decoration.line({
+								attributes: {
+									style: `padding-left: ${headerIndent}ch`
+								}
+							}).range(line.from));
+						}
 					}
 				}
 

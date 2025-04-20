@@ -136,6 +136,17 @@ body {
   min-height: 1.5em;
 }
 
+/* Quote styling */
+.quote-line {
+  position: relative;
+}
+
+.quote-line .cm-quote {
+  border-left: 2px solid var(--doom-base5);
+  margin-left: 0;
+  padding-left: 1ch;
+}
+
 /* List and quote styling */
 .list-quote-line {
   position: relative;
