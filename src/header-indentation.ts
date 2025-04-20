@@ -1,6 +1,7 @@
 import { Extension, StateEffect } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from '@codemirror/view';
-import { Range, StateField } from '@codemirror/state';
+import { Range, StateField, Text } from '@codemirror/state';
+import { syntaxTree } from '@codemirror/language';
 
 // Define the effect type for updating decorations
 const updateDecorations = StateEffect.define<DecorationSet>();
@@ -76,28 +77,45 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				});
 			}
 
+			private findHeaderLevel(doc: Text, lineNo: number): number {
+				// Look backwards to find the nearest header level
+				for (let i = lineNo; i >= 1; i--) {
+					const lineText = doc.line(i).text;
+					const headerMatch = lineText.match(/^(#+)\s/);
+					if (headerMatch) {
+						const level = headerMatch[1].length;
+						if (settings.ignoreH1Headers && level === 1) {
+							return 0;
+						}
+						return level;
+					}
+					// Stop if we hit a blank line before a header
+					if (i < lineNo && lineText.trim() === '') {
+						return 0;
+					}
+				}
+				return 0;
+			}
+
 			computeDecorations(view: EditorView): DecorationSet {
 				const decorations: Range<Decoration>[] = [];
 				const doc = view.state.doc;
-				let currentHeaderLevel = 0;
+				const tree = syntaxTree(view.state);
 
 				// First pass: collect all decorations
 				for (let i = 1; i <= doc.lines; i++) {
 					const line = doc.line(i);
 					const text = line.text;
+					const headerLevel = this.findHeaderLevel(doc, i);
 
-					// Check if line is a header
+					// Handle headers
 					const headerMatch = text.match(/^(#+)\s/);
 					if (headerMatch) {
 						const hashtagCount = headerMatch[1].length;
-
-						// Skip H1 headers if configured
 						if (settings.ignoreH1Headers && hashtagCount === 1) {
-							currentHeaderLevel = 0;
 							continue;
 						}
 
-						currentHeaderLevel = hashtagCount;
 						const hashtagsStart = line.from;
 						const hashtagsEnd = hashtagsStart + hashtagCount;
 
@@ -123,14 +141,27 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 							side: -1
 						}).range(hashtagsStart));
 
-					} else if (text.trim() && currentHeaderLevel > 0) {
-						// Add indentation for non-empty lines under headers
-						const indentWidth = currentHeaderLevel * settings.indentationWidth;
+					} else if (headerLevel > 0) {
+						// Add indentation for ALL lines under headers (including empty lines)
+						const indentWidth = headerLevel * settings.indentationWidth;
+
+						// Create a line decoration that affects the whole line
 						decorations.push(Decoration.line({
 							attributes: {
 								style: `padding-left: ${indentWidth}ch`
-							}
+							},
+							// Add a class to help with cursor positioning
+							class: 'header-indented-line'
 						}).range(line.from));
+
+						// If this is a list or blockquote, ensure markers are properly aligned
+						const isListOrQuote = text.match(/^[\s>]*[-*+]|\d+\.|>/);
+						if (isListOrQuote) {
+							// Add specific styling for list markers and quote markers
+							decorations.push(Decoration.line({
+								class: 'preserve-marker-indent'
+							}).range(line.from));
+						}
 					}
 				}
 

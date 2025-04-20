@@ -124,16 +124,41 @@ body {
 }
 
 /* Different colors for different header levels */
-.header-bullet-1 { color: var(--text-accent); }
-.header-bullet-2 { color: var(--text-accent-hover); }
-.header-bullet-3 { color: var(--text-muted); }
-.header-bullet-4 { color: var(--text-faint); }
-.header-bullet-5 { color: var(--text-faint); opacity: 0.8; }
-.header-bullet-6 { color: var(--text-faint); opacity: 0.6; }
+.header-bullet-1 { color: var(--doom-magenta); }
+.header-bullet-2 { color: var(--doom-orange); }
+.header-bullet-3 { color: var(--doom-violet); }
+.header-bullet-4 { color: var(--doom-green); }
+.header-bullet-5 { color: var(--doom-cyan); }
+.header-bullet-6 { color: var(--doom-yellow); }
 
-/* Ensure proper spacing */
+/* Ensure proper spacing and cursor positioning */
 .cm-line {
   min-height: 1.5em;
+  position: relative; /* For absolute positioning of markers */
+}
+
+/* Handle indented lines */
+.header-indented-line {
+  position: relative;
+}
+
+/* Preserve list markers and blockquote markers positioning */
+.preserve-marker-indent {
+  position: relative;
+}
+
+/* Ensure list markers and blockquote markers stay at the left edge of their indented space */
+.preserve-marker-indent .cm-formatting-list-ul,
+.preserve-marker-indent .cm-formatting-list-ol,
+.preserve-marker-indent .cm-formatting-quote {
+  position: absolute;
+  left: 0;
+}
+
+/* Ensure the content after markers is properly aligned */
+.preserve-marker-indent .cm-list-1,
+.preserve-marker-indent .cm-quote {
+  margin-left: 1.5ch;
 }
 
 /* Lists - using org-list colors */
