@@ -87,11 +87,18 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						if (settings.ignoreH1Headers && level === 1) {
 							return 0;
 						}
+						// Check if we hit a higher level header
+						if (i < lineNo) {
+							const currentLevel = headerMatch[1].length;
+							for (let j = i + 1; j < lineNo; j++) {
+								const intermediateText = doc.line(j).text;
+								const intermediateMatch = intermediateText.match(/^(#+)\s/);
+								if (intermediateMatch && intermediateMatch[1].length <= currentLevel) {
+									return 0; // Found a header at same or higher level, stop here
+								}
+							}
+						}
 						return level;
-					}
-					// Stop if we hit a blank line before a header
-					if (i < lineNo && lineText.trim() === '') {
-						return 0;
 					}
 				}
 				return 0;
@@ -142,24 +149,36 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						}).range(hashtagsStart));
 
 					} else if (headerLevel > 0) {
-						// Add indentation for ALL lines under headers (including empty lines)
-						const indentWidth = headerLevel * settings.indentationWidth;
+						// Check if this is a list item or blockquote
+						const listMatch = text.match(/^(\s*)([-*+]|\d+\.|\>)\s/);
+						const isListOrQuote = !!listMatch;
 
-						// Create a line decoration that affects the whole line
-						decorations.push(Decoration.line({
-							attributes: {
-								style: `padding-left: ${indentWidth}ch`
-							},
-							// Add a class to help with cursor positioning
-							class: 'header-indented-line'
-						}).range(line.from));
-
-						// If this is a list or blockquote, ensure markers are properly aligned
-						const isListOrQuote = text.match(/^[\s>]*[-*+]|\d+\.|>/);
 						if (isListOrQuote) {
-							// Add specific styling for list markers and quote markers
+							// For lists and quotes, only indent the marker part
+							const markerStart = line.from;
+							const markerEnd = line.from + (listMatch[1]?.length || 0) + (listMatch[2]?.length || 0);
+
+							// Add the header-level indentation to the marker
+							const indentWidth = headerLevel * settings.indentationWidth;
 							decorations.push(Decoration.line({
-								class: 'preserve-marker-indent'
+								attributes: {
+									style: `padding-left: ${indentWidth}ch`
+								},
+								class: 'list-quote-line'
+							}).range(line.from));
+
+							// Add a special class to handle the marker alignment
+							decorations.push(Decoration.mark({
+								class: 'list-quote-marker'
+							}).range(markerStart, markerEnd));
+
+						} else {
+							// Regular content gets full indentation
+							const indentWidth = headerLevel * settings.indentationWidth;
+							decorations.push(Decoration.line({
+								attributes: {
+									style: `padding-left: ${indentWidth}ch`
+								}
 							}).range(line.from));
 						}
 					}

@@ -131,10 +131,40 @@ body {
 .header-bullet-5 { color: var(--doom-cyan); }
 .header-bullet-6 { color: var(--doom-yellow); }
 
-/* Ensure proper spacing and cursor positioning */
+/* List and quote styling */
+.list-quote-line {
+  position: relative;
+}
+
+.list-quote-marker {
+  position: relative;
+  display: inline-block;
+}
+
+/* Ensure list markers and quote bars align properly */
+.cm-formatting-list-ul,
+.cm-formatting-list-ol,
+.cm-formatting-quote,
+.cm-quote {
+  position: relative;
+  display: inline-block;
+}
+
+/* Style the vertical lines for quotes and nested lists */
+.cm-quote {
+  border-left: 2px solid var(--doom-base5);
+  margin-left: -1ch;
+  padding-left: 1ch;
+}
+
+.cm-list-1 {
+  margin-left: 1ch;
+}
+
+/* Ensure proper spacing */
 .cm-line {
   min-height: 1.5em;
-  position: relative; /* For absolute positioning of markers */
+  position: relative;
 }
 
 /* Handle indented lines */
