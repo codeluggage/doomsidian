@@ -24,23 +24,23 @@ export interface HeaderIndentationSettings {
 	indentationWidth: number;
 }
 
-// Unicode bullet symbols for different header levels - selected for consistent width
-const HEADER_BULLETS = ['•', '•', '•', '•', '•', '•'];  // Using the same bullet for consistency
+// Org-mode style bullets for different header levels
+const HEADER_BULLETS = ['•', '○', '✱', '✸', '◇', '▶'];
 
 class BulletWidget extends WidgetType {
-	constructor(private bullet: string) {
+	constructor(private bullet: string, private level: number) {
 		super();
 	}
 
 	toDOM() {
 		const span = document.createElement('span');
 		span.textContent = this.bullet;
-		span.className = 'header-bullet';
+		span.className = `header-bullet header-bullet-${this.level}`;
 		return span;
 	}
 
 	eq(other: BulletWidget) {
-		return other.bullet === this.bullet;
+		return other.bullet === this.bullet && other.level === this.level;
 	}
 
 	get estimatedHeight() { return 1; }
@@ -101,18 +101,27 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						const hashtagsStart = line.from;
 						const hashtagsEnd = hashtagsStart + hashtagCount;
 
-						if (hashtagCount > 1) {
-							// Make all but the last hashtag invisible by matching background color
-							decorations.push(Decoration.mark({
-								class: 'header-hashtag-hidden'
-							}).range(hashtagsStart, hashtagsEnd - 1));
-
-							// Replace the last hashtag with a bullet
-							const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
-							decorations.push(Decoration.replace({
-								widget: new BulletWidget(HEADER_BULLETS[bulletIndex])
-							}).range(hashtagsEnd - 1, hashtagsEnd));
+						// Add indentation for the header line itself
+						const headerIndent = (hashtagCount - 1) * settings.indentationWidth;
+						if (headerIndent > 0) {
+							decorations.push(Decoration.line({
+								attributes: {
+									style: `padding-left: ${headerIndent}ch`
+								}
+							}).range(line.from));
 						}
+
+						// Hide all hashtags
+						decorations.push(Decoration.mark({
+							class: 'header-hashtag-hidden'
+						}).range(hashtagsStart, hashtagsEnd));
+
+						// Add bullet point at the start
+						const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
+						decorations.push(Decoration.widget({
+							widget: new BulletWidget(HEADER_BULLETS[bulletIndex], hashtagCount),
+							side: -1
+						}).range(hashtagsStart));
 
 					} else if (text.trim() && currentHeaderLevel > 0) {
 						// Add indentation for non-empty lines under headers
@@ -125,14 +134,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 					}
 				}
 
-				// Sort decorations by from position and startSide
-				decorations.sort((a, b) => {
-					const fromDiff = a.from - b.from;
-					if (fromDiff) return fromDiff;
-					return (a.value.startSide || 0) - (b.value.startSide || 0);
-				});
-
-				return Decoration.set(decorations);
+				return Decoration.set(decorations, true);
 			}
 		})
 	];

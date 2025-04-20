@@ -109,11 +109,31 @@ body {
     font-weight: var(--file-header-font-weight) !important;
 }
 
-/* Header bullets from our plugin */
+/* Header indentation and bullets */
+.header-hashtag-hidden {
+  color: transparent;
+  user-select: none;
+}
+
 .header-bullet {
-    color: var(--doom-base4);
-    opacity: 0.8;
-    font-size: var(--file-header-font-size) !important;
+  display: inline-block;
+  width: 1.2em;
+  margin-right: 0.3em;
+  color: var(--text-accent);
+  user-select: none;
+}
+
+/* Different colors for different header levels */
+.header-bullet-1 { color: var(--text-accent); }
+.header-bullet-2 { color: var(--text-accent-hover); }
+.header-bullet-3 { color: var(--text-muted); }
+.header-bullet-4 { color: var(--text-faint); }
+.header-bullet-5 { color: var(--text-faint); opacity: 0.8; }
+.header-bullet-6 { color: var(--text-faint); opacity: 0.6; }
+
+/* Ensure proper spacing */
+.cm-line {
+  min-height: 1.5em;
 }
 
 /* Lists - using org-list colors */
