@@ -52,35 +52,41 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 	return [
 		headerIndentationField,
 		ViewPlugin.fromClass(class {
-			decorations: DecorationSet = Decoration.none; // Initialize decorations
+			decorations: DecorationSet = Decoration.none;
 			currentSettings: HeaderIndentationSettings;
-			private updateScheduled = false; // Added from previous version
+			private updateScheduled = false;
+			private lastDocLength = 0;
+			private lastViewportFrom = 0;
+			private lastViewportTo = 0;
 
 			constructor(view: EditorView) {
 				this.currentSettings = settings;
-				// Don't compute here, scheduleUpdate will handle it
 				this.scheduleUpdate(view);
 			}
 
 			update(update: ViewUpdate) {
-				// Only schedule if changes might affect decorations
-				if (update.docChanged || update.viewportChanged || update.geometryChanged) {
+				const docChanged = update.docChanged;
+				const viewportChanged =
+					update.view.viewport.from !== this.lastViewportFrom ||
+					update.view.viewport.to !== this.lastViewportTo;
+				const docLengthChanged = update.state.doc.length !== this.lastDocLength;
+
+				if (docChanged || viewportChanged || docLengthChanged) {
+					this.lastDocLength = update.state.doc.length;
+					this.lastViewportFrom = update.view.viewport.from;
+					this.lastViewportTo = update.view.viewport.to;
 					this.scheduleUpdate(update.view);
 				}
-				// TODO: Add settings update check if dynamic reconfiguration is needed
 			}
 
-			// Added from previous version
 			private scheduleUpdate(view: EditorView) {
 				if (this.updateScheduled) return;
 				this.updateScheduled = true;
 
 				Promise.resolve().then(() => {
 					this.updateScheduled = false;
-					// Check if view state still exists (implies view is not destroyed)
 					if (!view.state) return;
 
-					// Dispatch the computed decorations as an effect
 					const newDecorations = this.computeDecorations(view);
 					view.dispatch({
 						effects: updateDecorations.of(newDecorations)
@@ -92,7 +98,6 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				const decorations: Range<Decoration>[] = [];
 				const doc = view.state.doc;
 				let currentHeaderLevel = 0;
-				console.log('[HeaderIndent] Running computeDecorations. Indentation Width:', this.currentSettings.indentationWidth);
 
 				for (let i = 1; i <= doc.lines; i++) {
 					const line = doc.line(i);
@@ -101,15 +106,13 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 
 					if (headerMatch) {
 						const hashtagCount = headerMatch[1].length;
-						const levelBeforeIgnore = hashtagCount;
 						currentHeaderLevel = (this.currentSettings.ignoreH1Headers && hashtagCount === 1) ? 0 : hashtagCount;
-						console.log(`[HeaderIndent] Line ${i}: Header found. Raw Level: ${levelBeforeIgnore}, Effective Level (currentHeaderLevel): ${currentHeaderLevel}`);
 
 						if (currentHeaderLevel > 0) {
 							const hashtagsStart = line.from;
 							const hashtagsEnd = hashtagsStart + hashtagCount;
 
-							// Add indentation for the header line itself (optional, keeping consistent with commit)
+							// Add indentation for the header line itself
 							const headerIndent = (hashtagCount - 1) * this.currentSettings.indentationWidth;
 							if (headerIndent > 0) {
 								decorations.push(Decoration.line({
@@ -130,25 +133,19 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 								widget: new BulletWidget(HEADER_BULLETS[bulletIndex], hashtagCount),
 								side: -1
 							}).range(hashtagsStart));
-							console.log(`[HeaderIndent] Line ${i}: Added header decorations (indent, hide, bullet)`);
 						}
 
 					} else if (text.trim() && currentHeaderLevel > 0) {
-						// Add indentation for non-empty lines under headers using inline style
+						// Add indentation for non-empty lines under headers
 						const indentWidth = currentHeaderLevel * this.currentSettings.indentationWidth;
-						console.log(`[HeaderIndent] Line ${i}: Content line under header. currentHeaderLevel=${currentHeaderLevel}, indentWidth=${indentWidth}. Text: "${text.substring(0, 50)}..."`);
 						decorations.push(Decoration.line({
 							attributes: { style: `padding-left: ${indentWidth}ch` }
 						}).range(line.from));
-					} else if (text.trim()) {
-						console.log(`[HeaderIndent] Line ${i}: Regular text line (or header ignored). currentHeaderLevel=${currentHeaderLevel}. Text: "${text.substring(0, 50)}..."`);
-					} else {
-						console.log(`[HeaderIndent] Line ${i}: Empty line. Resetting currentHeaderLevel.`);
+					} else if (!text.trim()) {
+						currentHeaderLevel = 0;
 					}
 				}
 
-				console.log(`[HeaderIndent] computeDecorations finished. Total decorations: ${decorations.length}`);
-				// Let Decoration.set handle sorting by passing `true`
 				return Decoration.set(decorations, true);
 			}
 		})
