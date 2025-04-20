@@ -136,14 +136,9 @@ body {
   min-height: 1.5em;
 }
 
-/* Quote styling */
-.quote-line {
-  position: relative;
-}
-
-.quote-line .cm-quote {
+/* Quote styling - let CodeMirror handle the structure */
+.cm-quote {
   border-left: 2px solid var(--doom-base5);
-  margin-left: 0;
   padding-left: 1ch;
 }
 

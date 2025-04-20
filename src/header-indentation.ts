@@ -130,7 +130,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						if (headerIndent > 0) {
 							decorations.push(Decoration.line({
 								attributes: {
-									style: `padding-left: ${headerIndent}ch`
+									style: `margin-left: ${headerIndent}ch`
 								}
 							}).range(line.from));
 						}
@@ -151,23 +151,30 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						// Calculate base indentation from header level
 						const headerIndent = headerLevel * settings.indentationWidth;
 
-						// Check if this is a blockquote
-						const isQuote = text.match(/^\s*>/);
-						if (isQuote) {
-							// For quotes, we need to preserve the quote marker position
-							// but indent the content
+						// Check if this is a list or quote
+						const listMatch = text.match(/^(\s*)([-*+]|\d+\.)\s/);
+						const quoteMatch = text.match(/^(\s*)>/);
+
+						if (listMatch) {
+							// For lists, add the header indentation to the existing indentation
+							const existingIndent = listMatch[1]?.length || 0;
 							decorations.push(Decoration.line({
 								attributes: {
-									style: `padding-left: ${headerIndent}ch`
-								},
-								class: 'quote-line'
+									style: `margin-left: ${headerIndent}ch`
+								}
+							}).range(line.from));
+						} else if (quoteMatch) {
+							// For quotes, add the header indentation
+							decorations.push(Decoration.line({
+								attributes: {
+									style: `margin-left: ${headerIndent}ch`
+								}
 							}).range(line.from));
 						} else {
-							// For regular content and lists, use padding-left
-							// Lists will handle their own additional indentation
+							// Regular content gets header indentation
 							decorations.push(Decoration.line({
 								attributes: {
-									style: `padding-left: ${headerIndent}ch`
+									style: `margin-left: ${headerIndent}ch`
 								}
 							}).range(line.from));
 						}
