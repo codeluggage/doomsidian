@@ -72,6 +72,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				const decorations: Range<Decoration>[] = [];
 				const doc = view.state.doc;
 				let currentHeaderLevel = 0;
+				console.log('[HeaderIndent] Running computeDecorations. Indentation Width:', this.currentSettings.indentationWidth);
 
 				for (let i = 1; i <= doc.lines; i++) {
 					const line = doc.line(i);
@@ -80,21 +81,23 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 
 					if (headerMatch) {
 						const hashtagCount = headerMatch[1].length;
+						const levelBeforeIgnore = hashtagCount;
 						currentHeaderLevel = (this.currentSettings.ignoreH1Headers && hashtagCount === 1) ? 0 : hashtagCount;
+						console.log(`[HeaderIndent] Line ${i}: Header found. Raw Level: ${levelBeforeIgnore}, Effective Level (currentHeaderLevel): ${currentHeaderLevel}`);
 
 						if (currentHeaderLevel > 0) {
 							const hashtagsStart = line.from;
 							const hashtagsEnd = hashtagsStart + hashtagCount;
 
-							// Add indentation for the header line itself (optional, adjust as needed)
-							// const headerIndent = (hashtagCount - 1) * this.currentSettings.indentationWidth;
-							// if (headerIndent > 0) {
-							// 	decorations.push(Decoration.line({
-							// 		attributes: {
-							// 			style: `padding-left: ${headerIndent}ch`
-							// 		}
-							// 	}).range(line.from));
-							// }
+							// Add indentation for the header line itself (optional, keeping consistent with commit)
+							const headerIndent = (hashtagCount - 1) * this.currentSettings.indentationWidth;
+							if (headerIndent > 0) {
+								decorations.push(Decoration.line({
+									attributes: {
+										style: `padding-left: ${headerIndent}ch`
+									}
+								}).range(line.from));
+							}
 
 							// Hide all hashtags
 							decorations.push(Decoration.mark({
@@ -105,19 +108,26 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 							const bulletIndex = Math.min(hashtagCount - 1, HEADER_BULLETS.length - 1);
 							decorations.push(Decoration.widget({
 								widget: new BulletWidget(HEADER_BULLETS[bulletIndex], hashtagCount),
-								side: -1 // Place before other decorations at the same position
+								side: -1
 							}).range(hashtagsStart));
+							console.log(`[HeaderIndent] Line ${i}: Added header decorations (indent, hide, bullet)`);
 						}
 
 					} else if (text.trim() && currentHeaderLevel > 0) {
 						// Add indentation for non-empty lines under headers using inline style
 						const indentWidth = currentHeaderLevel * this.currentSettings.indentationWidth;
+						console.log(`[HeaderIndent] Line ${i}: Content line under header. currentHeaderLevel=${currentHeaderLevel}, indentWidth=${indentWidth}. Text: "${text.substring(0, 50)}..."`);
 						decorations.push(Decoration.line({
 							attributes: { style: `padding-left: ${indentWidth}ch` }
 						}).range(line.from));
+					} else if (text.trim()) {
+						console.log(`[HeaderIndent] Line ${i}: Regular text line (or header ignored). currentHeaderLevel=${currentHeaderLevel}. Text: "${text.substring(0, 50)}..."`);
+					} else {
+						console.log(`[HeaderIndent] Line ${i}: Empty line. Resetting currentHeaderLevel.`);
 					}
 				}
 
+				console.log(`[HeaderIndent] computeDecorations finished. Total decorations: ${decorations.length}`);
 				// Let Decoration.set handle sorting by passing `true`
 				return Decoration.set(decorations, true);
 			}
