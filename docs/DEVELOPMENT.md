@@ -26,6 +26,35 @@ return Decoration.set(decorations.sort((a, b) => {
 }));
 ```
 
+### Header Indentation Challenges
+
+When implementing header-based indentation:
+
+1. **Decoration Types**:
+   - Line decorations (`padding-left`) can interfere with list indentation
+   - `margin-left` works better with CodeMirror's native list handling
+   - Class-based decorations are more stable than inline styles
+
+2. **List Interaction**:
+   - Let CodeMirror handle list indentation natively
+   - Avoid interfering with tab/shift-tab behavior
+   - Consider list markers when calculating indentation
+
+3. **Quote Handling**:
+   - Vertical bars need special consideration
+   - Let CodeMirror handle quote structure
+   - Add indentation without breaking quote markers
+
+4. **Empty Lines**:
+   - Must maintain header level context
+   - Don't break on empty lines between content
+   - Consider header hierarchy when determining level
+
+5. **Vim Mode Compatibility**:
+   - Avoid absolute positioning that breaks line calculations
+   - Use simple class-based decorations where possible
+   - Test with cursor movement commands
+
 ### Widget and Replace Decorations
 
 When using both widget and replace decorations at the same position:
@@ -46,76 +75,57 @@ Decoration.replace({
 }).range(pos, endPos)
 ```
 
-### Extension Management in Tests
-
-When testing CodeMirror extensions:
-
-1. Don't try to access `view.state.extensions` directly - it's not accessible
-2. Instead, explicitly provide the extensions array when creating the editor state:
-
-```typescript
-EditorState.create({
-    doc: content,
-    extensions: [
-        markdown(),
-        headerIndentation(settings)
-    ]
-})
-```
-
 ### Visual Stability
 
 To maintain visual stability in the editor:
 
-1. Prefer replacing text with fixed-width characters or spaces over hiding with CSS
-2. When using widgets, ensure they have consistent width and positioning
-3. Use `ch` units for text-related measurements to maintain proportional spacing
-4. Consider the impact of decorations on cursor movement and selection
+1. Prefer class-based decorations over inline styles
+2. Consider the interaction between different decoration types
+3. Use `ch` units for text-related measurements
+4. Test with various content types:
+   - Mixed lists (ordered, unordered, tasks)
+   - Nested quotes
+   - Empty lines
+   - Headers at different levels
 
 ### Performance Considerations
 
-1. Only recompute decorations when necessary (document changes or viewport changes)
-2. Use efficient matching patterns for text analysis
-3. Cache computed values where possible
-4. Consider using `WeakMap` for storing decoration-related data
+1. Only recompute decorations when necessary
+2. Cache header level calculations where possible
+3. Minimize DOM operations and style changes
+4. Consider using WeakMap for decoration data
 
-### Testing DOM Operations
+## Known Issues and Solutions
 
-When testing CodeMirror's DOM operations:
+1. **Header Indentation vs Lists**:
+   - Challenge: Header indentation interferes with list behavior
+   - Current approach: Use margin-left and let CodeMirror handle lists
+   - Remaining issue: Tab/Shift-tab behavior needs improvement
 
-1. `view.domAtPos()` returns a `NodeView` object, not a direct DOM node. You need to:
-   ```typescript
-   // Wrong:
-   const node = view.domAtPos(pos).node as HTMLElement;
-   expect(node).toHaveStyle(...);  // Will fail
+2. **Quote Rendering**:
+   - Challenge: Maintaining quote markers and vertical bars
+   - Current approach: Let CodeMirror handle quote structure
+   - Status: Partially solved, needs refinement
 
-   // Correct:
-   const nodeView = view.domAtPos(pos);
-   const domNode = nodeView.node.parentElement;  // Get actual DOM element
-   expect(domNode).toHaveStyle(...);
-   ```
+3. **Mixed Content**:
+   - Challenge: Different content types need different handling
+   - Current approach: Content-type specific classes
+   - Status: Works for basic cases, complex nesting needs work
 
-2. For finding CodeMirror-specific elements:
-   ```typescript
-   // Wrong:
-   element.querySelector('.cm-line');
+4. **Vim Mode**:
+   - Challenge: Decorations breaking cursor movement
+   - Solution: Use simpler class-based decorations
+   - Status: Fixed for basic movement
 
-   // Correct:
-   view.dom.querySelector('.cm-line');  // Search from editor root
-   ```
+## Future Improvements
 
-3. Jest DOM testing setup:
-   ```typescript
-   // In jest setup file:
-   import '@testing-library/jest-dom';  // For toHaveStyle and other DOM matchers
-   ```
-
-4. When testing decorations, verify their presence in the decoration set rather than the DOM:
-   ```typescript
-   const decorations = view.decorations;
-   expect(decorations.size).toBeGreaterThan(0);
-   // Check specific decoration properties
-   ```
+1. Investigate better list indentation handling
+2. Improve quote marker stability
+3. Refine mixed content behavior
+4. Consider alternative approaches:
+   - CodeMirror language extension
+   - Native indentation integration
+   - Custom indent handling
 
 ## Plugin Architecture
 
@@ -146,16 +156,3 @@ interface HeaderIndentationSettings {
    - Headers without space after hashtags
    - Mixed content under headers
    - Nested structures (lists, quotes)
-
-## Known Issues and Solutions
-
-1. **Decoration Jumping**: Fixed by proper decoration ordering and consistent widget positioning
-2. **Header Marker Concealment**: Solved by using replace decorations instead of CSS visibility
-3. **Indentation Stability**: Achieved through careful management of text-indent and margins
-
-## Future Improvements
-
-1. Consider adding more header styles/bullets
-2. Improve performance for large documents
-3. Add support for folding/unfolding header sections
-4. Consider adding custom styling options for different header levels 

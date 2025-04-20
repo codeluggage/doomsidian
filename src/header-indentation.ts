@@ -125,16 +125,6 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						const hashtagsStart = line.from;
 						const hashtagsEnd = hashtagsStart + hashtagCount;
 
-						// Add indentation for the header line itself
-						const headerIndent = (hashtagCount - 1) * settings.indentationWidth;
-						if (headerIndent > 0) {
-							decorations.push(Decoration.line({
-								attributes: {
-									style: `margin-left: ${headerIndent}ch`
-								}
-							}).range(line.from));
-						}
-
 						// Hide all hashtags
 						decorations.push(Decoration.mark({
 							class: 'header-hashtag-hidden'
@@ -147,35 +137,27 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 							side: -1
 						}).range(hashtagsStart));
 
-					} else if (headerLevel > 0) {
-						// Calculate base indentation from header level
-						const headerIndent = headerLevel * settings.indentationWidth;
+					}
 
-						// Check if this is a list or quote
-						const listMatch = text.match(/^(\s*)([-*+]|\d+\.)\s/);
-						const quoteMatch = text.match(/^(\s*)>/);
+					// Add indentation class based on header level
+					if (headerLevel > 0) {
+						// Don't add indentation to the header line itself
+						if (!headerMatch) {
+							const baseClass = 'header-indent';
+							const levelClass = `${baseClass}-${headerLevel}`;
 
-						if (listMatch) {
-							// For lists, add the header indentation to the existing indentation
-							const existingIndent = listMatch[1]?.length || 0;
+							// Check if this is a list or quote
+							const listMatch = text.match(/^(\s*)([-*+]|\d+\.)\s/);
+							const quoteMatch = text.match(/^(\s*)>/);
+							const taskMatch = text.match(/^(\s*)([-*+]|\d+\.)\s\[[x ]\]\s/i);
+
+							let extraClass = '';
+							if (listMatch) extraClass = ' list-line';
+							if (quoteMatch) extraClass = ' quote-line';
+							if (taskMatch) extraClass = ' task-line';
+
 							decorations.push(Decoration.line({
-								attributes: {
-									style: `margin-left: ${headerIndent}ch`
-								}
-							}).range(line.from));
-						} else if (quoteMatch) {
-							// For quotes, add the header indentation
-							decorations.push(Decoration.line({
-								attributes: {
-									style: `margin-left: ${headerIndent}ch`
-								}
-							}).range(line.from));
-						} else {
-							// Regular content gets header indentation
-							decorations.push(Decoration.line({
-								attributes: {
-									style: `margin-left: ${headerIndent}ch`
-								}
+								class: levelClass + extraClass
 							}).range(line.from));
 						}
 					}

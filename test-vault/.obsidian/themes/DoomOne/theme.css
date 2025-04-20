@@ -131,69 +131,37 @@ body {
 .header-bullet-5 { color: var(--doom-cyan); }
 .header-bullet-6 { color: var(--doom-yellow); }
 
+/* Header indentation levels */
+.header-indent-1 { padding-left: 2ch; }
+.header-indent-2 { padding-left: 4ch; }
+.header-indent-3 { padding-left: 6ch; }
+.header-indent-4 { padding-left: 8ch; }
+.header-indent-5 { padding-left: 10ch; }
+.header-indent-6 { padding-left: 12ch; }
+
+/* List and quote handling */
+.list-line {
+  position: relative;
+}
+
+.quote-line {
+  position: relative;
+}
+
+/* Quote styling */
+.cm-quote {
+  border-left: 2px solid var(--doom-base5);
+  padding-left: 1ch;
+}
+
+/* Task list styling */
+.task-line .cm-formatting-task {
+  color: var(--doom-base5);
+}
+
 /* Ensure proper spacing */
 .cm-line {
   min-height: 1.5em;
-}
-
-/* Quote styling - let CodeMirror handle the structure */
-.cm-quote {
-  border-left: 2px solid var(--doom-base5);
-  padding-left: 1ch;
-}
-
-/* List and quote styling */
-.list-quote-line {
-  position: relative;
-}
-
-.list-quote-marker {
-  position: relative;
-  display: inline-block;
-}
-
-/* Ensure list markers and quote bars align properly */
-.cm-formatting-list-ul,
-.cm-formatting-list-ol,
-.cm-formatting-quote,
-.cm-quote {
-  position: relative;
-  display: inline-block;
-}
-
-/* Style the vertical lines for quotes and nested lists */
-.cm-quote {
-  border-left: 2px solid var(--doom-base5);
-  margin-left: -1ch;
-  padding-left: 1ch;
-}
-
-.cm-list-1 {
-  margin-left: 1ch;
-}
-
-/* Handle indented lines */
-.header-indented-line {
-  position: relative;
-}
-
-/* Preserve list markers and blockquote markers positioning */
-.preserve-marker-indent {
-  position: relative;
-}
-
-/* Ensure list markers and blockquote markers stay at the left edge of their indented space */
-.preserve-marker-indent .cm-formatting-list-ul,
-.preserve-marker-indent .cm-formatting-list-ol,
-.preserve-marker-indent .cm-formatting-quote {
-  position: absolute;
-  left: 0;
-}
-
-/* Ensure the content after markers is properly aligned */
-.preserve-marker-indent .cm-list-1,
-.preserve-marker-indent .cm-quote {
-  margin-left: 1.5ch;
 }
 
 /* Lists - using org-list colors */
