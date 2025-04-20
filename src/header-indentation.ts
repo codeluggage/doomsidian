@@ -98,11 +98,15 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				const decorations: Range<Decoration>[] = [];
 				const doc = view.state.doc;
 				let currentHeaderLevel = 0;
+				let lastNonEmptyLine = '';
+				let emptyLineCount = 0;
 
 				for (let i = 1; i <= doc.lines; i++) {
 					const line = doc.line(i);
 					const text = line.text;
 					const headerMatch = text.match(/^(#+)\s/);
+					const isListItem = text.match(/^[\s]*([-*+]|\d+\.)\s/);
+					const isEmpty = !text.trim();
 
 					if (headerMatch) {
 						const hashtagCount = headerMatch[1].length;
@@ -134,15 +138,24 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 								side: -1
 							}).range(hashtagsStart));
 						}
+						emptyLineCount = 0;
+					} else if (isEmpty) {
+						// Only reset header level if we've seen multiple empty lines and no lists
+						emptyLineCount++;
+						if (emptyLineCount > 1 && !lastNonEmptyLine.match(/^[\s]*([-*+]|\d+\.)\s/)) {
+							currentHeaderLevel = 0;
+						}
+					} else {
+						emptyLineCount = 0;
+						lastNonEmptyLine = text;
 
-					} else if (text.trim() && currentHeaderLevel > 0) {
-						// Add indentation for non-empty lines under headers
-						const indentWidth = currentHeaderLevel * this.currentSettings.indentationWidth;
-						decorations.push(Decoration.line({
-							attributes: { style: `padding-left: ${indentWidth}ch` }
-						}).range(line.from));
-					} else if (!text.trim()) {
-						currentHeaderLevel = 0;
+						if (currentHeaderLevel > 0) {
+							// Add indentation for non-empty lines under headers
+							const indentWidth = currentHeaderLevel * this.currentSettings.indentationWidth;
+							decorations.push(Decoration.line({
+								attributes: { style: `padding-left: ${indentWidth}ch` }
+							}).range(line.from));
+						}
 					}
 				}
 
