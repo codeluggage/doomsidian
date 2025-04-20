@@ -131,13 +131,13 @@ body {
 .header-bullet-5 { color: var(--doom-cyan); }
 .header-bullet-6 { color: var(--doom-yellow); }
 
-/* Header indentation levels */
-.header-indent-1 { padding-left: 2ch; }
-.header-indent-2 { padding-left: 4ch; }
-.header-indent-3 { padding-left: 6ch; }
-.header-indent-4 { padding-left: 8ch; }
-.header-indent-5 { padding-left: 10ch; }
-.header-indent-6 { padding-left: 12ch; }
+/* Header indentation levels - Corrected Class Names */
+.cm-line-indent-1 { padding-left: 2ch !important; } /* Ignore H1 is usually true */
+.cm-line-indent-2 { padding-left: 4ch !important; }
+.cm-line-indent-3 { padding-left: 6ch !important; }
+.cm-line-indent-4 { padding-left: 8ch !important; }
+.cm-line-indent-5 { padding-left: 10ch !important; }
+.cm-line-indent-6 { padding-left: 12ch !important; }
 
 /* List and quote handling */
 .list-line {
