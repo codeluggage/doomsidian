@@ -131,6 +131,11 @@ body {
 .header-bullet-5 { color: var(--doom-cyan); }
 .header-bullet-6 { color: var(--doom-yellow); }
 
+/* Ensure proper spacing */
+.cm-line {
+  min-height: 1.5em;
+}
+
 /* List and quote styling */
 .list-quote-line {
   position: relative;
@@ -159,12 +164,6 @@ body {
 
 .cm-list-1 {
   margin-left: 1ch;
-}
-
-/* Ensure proper spacing */
-.cm-line {
-  min-height: 1.5em;
-  position: relative;
 }
 
 /* Handle indented lines */

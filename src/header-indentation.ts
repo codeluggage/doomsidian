@@ -107,7 +107,6 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 			computeDecorations(view: EditorView): DecorationSet {
 				const decorations: Range<Decoration>[] = [];
 				const doc = view.state.doc;
-				const tree = syntaxTree(view.state);
 
 				// First pass: collect all decorations
 				for (let i = 1; i <= doc.lines; i++) {
@@ -131,7 +130,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						if (headerIndent > 0) {
 							decorations.push(Decoration.line({
 								attributes: {
-									style: `padding-left: ${headerIndent}ch`
+									style: `margin-left: ${headerIndent}ch`
 								}
 							}).range(line.from));
 						}
@@ -149,38 +148,13 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						}).range(hashtagsStart));
 
 					} else if (headerLevel > 0) {
-						// Check if this is a list item or blockquote
-						const listMatch = text.match(/^(\s*)([-*+]|\d+\.|\>)\s/);
-						const isListOrQuote = !!listMatch;
-
-						if (isListOrQuote) {
-							// For lists and quotes, only indent the marker part
-							const markerStart = line.from;
-							const markerEnd = line.from + (listMatch[1]?.length || 0) + (listMatch[2]?.length || 0);
-
-							// Add the header-level indentation to the marker
-							const indentWidth = headerLevel * settings.indentationWidth;
-							decorations.push(Decoration.line({
-								attributes: {
-									style: `padding-left: ${indentWidth}ch`
-								},
-								class: 'list-quote-line'
-							}).range(line.from));
-
-							// Add a special class to handle the marker alignment
-							decorations.push(Decoration.mark({
-								class: 'list-quote-marker'
-							}).range(markerStart, markerEnd));
-
-						} else {
-							// Regular content gets full indentation
-							const indentWidth = headerLevel * settings.indentationWidth;
-							decorations.push(Decoration.line({
-								attributes: {
-									style: `padding-left: ${indentWidth}ch`
-								}
-							}).range(line.from));
-						}
+						// Add base indentation from header level
+						const indentWidth = headerLevel * settings.indentationWidth;
+						decorations.push(Decoration.line({
+							attributes: {
+								style: `margin-left: ${indentWidth}ch`
+							}
+						}).range(line.from));
 					}
 				}
 
