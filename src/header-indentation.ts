@@ -94,13 +94,20 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				});
 			}
 
+			private getListNestingLevel(text: string): number {
+				const match = text.match(/^(\s*)([-*+]|\d+\.)\s/);
+				if (!match) return 0;
+				return Math.floor(match[1].length / 2);
+			}
+
 			computeDecorations(view: EditorView): DecorationSet {
 				const decorations: Range<Decoration>[] = [];
 				const doc = view.state.doc;
-				let currentHeaderLevel = 0;
-				let inList = false;
-				let lastContentType: 'header' | 'list' | 'text' | 'empty' = 'empty';
+				let activeHeaderLevel = 0;
+				let lastHeaderLevel = 0;
 				let emptyLineCount = 0;
+				let inListBlock = false;
+				let lastListNestingLevel = 0;
 
 				for (let i = 1; i <= doc.lines; i++) {
 					const line = doc.line(i);
@@ -108,15 +115,16 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 					const headerMatch = text.match(/^(#+)\s/);
 					const isListItem = text.match(/^[\s]*([-*+]|\d+\.)\s/);
 					const isEmpty = !text.trim();
+					const listNestingLevel = this.getListNestingLevel(text);
 
 					if (headerMatch) {
 						const hashtagCount = headerMatch[1].length;
-						currentHeaderLevel = (this.currentSettings.ignoreH1Headers && hashtagCount === 1) ? 0 : hashtagCount;
-						lastContentType = 'header';
+						activeHeaderLevel = (this.currentSettings.ignoreH1Headers && hashtagCount === 1) ? 0 : hashtagCount;
+						lastHeaderLevel = activeHeaderLevel;
 						emptyLineCount = 0;
-						inList = false;
+						inListBlock = false;
 
-						if (currentHeaderLevel > 0) {
+						if (activeHeaderLevel > 0) {
 							const hashtagsStart = line.from;
 							const hashtagsEnd = hashtagsStart + hashtagCount;
 
@@ -144,24 +152,37 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						}
 					} else if (isEmpty) {
 						emptyLineCount++;
-						if (emptyLineCount > 1 && lastContentType !== 'list') {
-							currentHeaderLevel = 0;
+						// Only reset header level if we're not in a list block and have multiple empty lines
+						if (emptyLineCount > 1 && !inListBlock) {
+							activeHeaderLevel = 0;
 						}
-						lastContentType = 'empty';
 					} else {
 						emptyLineCount = 0;
 
 						if (isListItem) {
-							inList = true;
-							lastContentType = 'list';
+							inListBlock = true;
+							lastListNestingLevel = listNestingLevel;
+							// Restore header level if we're in a list
+							if (activeHeaderLevel === 0) {
+								activeHeaderLevel = lastHeaderLevel;
+							}
 						} else {
-							lastContentType = 'text';
+							// If we're not in a list anymore, check if we should reset
+							if (inListBlock && emptyLineCount > 0) {
+								inListBlock = false;
+								if (activeHeaderLevel === 0) {
+									activeHeaderLevel = lastHeaderLevel;
+								}
+							}
 						}
 
-						if (currentHeaderLevel > 0) {
-							const indentWidth = currentHeaderLevel * this.currentSettings.indentationWidth;
+						if (activeHeaderLevel > 0) {
+							const baseIndent = activeHeaderLevel * this.currentSettings.indentationWidth;
+							const listIndent = isListItem ? listNestingLevel * this.currentSettings.indentationWidth : 0;
+							const totalIndent = baseIndent + listIndent;
+
 							decorations.push(Decoration.line({
-								attributes: { style: `padding-left: ${indentWidth}ch` }
+								attributes: { style: `padding-left: ${totalIndent}ch` }
 							}).range(line.from));
 						}
 					}
