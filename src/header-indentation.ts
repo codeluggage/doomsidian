@@ -94,12 +94,6 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				});
 			}
 
-			private getListNestingLevel(text: string): number {
-				const match = text.match(/^(\s*)([-*+]|\d+\.)\s/);
-				if (!match) return 0;
-				return Math.floor(match[1].length / 2);
-			}
-
 			computeDecorations(view: EditorView): DecorationSet {
 				const decorations: Range<Decoration>[] = [];
 				const doc = view.state.doc;
@@ -107,7 +101,6 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				let lastHeaderLevel = 0;
 				let emptyLineCount = 0;
 				let inListBlock = false;
-				let lastListNestingLevel = 0;
 
 				for (let i = 1; i <= doc.lines; i++) {
 					const line = doc.line(i);
@@ -115,7 +108,6 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 					const headerMatch = text.match(/^(#+)\s/);
 					const isListItem = text.match(/^[\s]*([-*+]|\d+\.)\s/);
 					const isEmpty = !text.trim();
-					const listNestingLevel = this.getListNestingLevel(text);
 
 					if (headerMatch) {
 						const hashtagCount = headerMatch[1].length;
@@ -133,7 +125,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 							if (headerIndent > 0) {
 								decorations.push(Decoration.line({
 									attributes: {
-										style: `padding-left: ${headerIndent}ch`
+										style: `padding-left: ${headerIndent}ch !important`
 									}
 								}).range(line.from));
 							}
@@ -161,28 +153,19 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 
 						if (isListItem) {
 							inListBlock = true;
-							lastListNestingLevel = listNestingLevel;
 							// Restore header level if we're in a list
 							if (activeHeaderLevel === 0) {
 								activeHeaderLevel = lastHeaderLevel;
 							}
-						} else {
-							// If we're not in a list anymore, check if we should reset
-							if (inListBlock && emptyLineCount > 0) {
-								inListBlock = false;
-								if (activeHeaderLevel === 0) {
-									activeHeaderLevel = lastHeaderLevel;
-								}
-							}
 						}
 
-						if (activeHeaderLevel > 0) {
-							const baseIndent = activeHeaderLevel * this.currentSettings.indentationWidth;
-							const listIndent = isListItem ? listNestingLevel * this.currentSettings.indentationWidth : 0;
-							const totalIndent = baseIndent + listIndent;
-
+						if (activeHeaderLevel > 0 && !isListItem) {
+							// Only apply padding to non-list items
+							const indent = activeHeaderLevel * this.currentSettings.indentationWidth;
 							decorations.push(Decoration.line({
-								attributes: { style: `padding-left: ${totalIndent}ch` }
+								attributes: {
+									style: `padding-left: ${indent}ch !important`
+								}
 							}).range(line.from));
 						}
 					}
