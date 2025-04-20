@@ -97,11 +97,20 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						enter: (node) => {
 							const nodeName = node.type.name;
 
-							if (nodeName.startsWith('ATXHeading')) {
+							if (nodeName.includes('HyperMD-header')) {
 								isHeader = true;
-								const headerMatch = line.text.match(/^(#+)\s/);
-								if (headerMatch) {
-									const hashtagCount = headerMatch[1].length;
+								const levelMatch = nodeName.match(/header-(\d)/);
+								let hashtagCount = 0;
+								if (levelMatch && levelMatch[1]) {
+									hashtagCount = parseInt(levelMatch[1], 10);
+								} else {
+									const headerTextMatch = line.text.match(/^(#+)\s/);
+									if (headerTextMatch) {
+										hashtagCount = headerTextMatch[1].length;
+									}
+								}
+
+								if (hashtagCount > 0) {
 									const calculatedLevel = (this.currentSettings.ignoreH1Headers && hashtagCount === 1) ? 0 : hashtagCount;
 									currentHeaderLevel = calculatedLevel;
 
@@ -129,7 +138,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 								nodeName === 'HorizontalRule' ||
 								nodeName === 'Task' || nodeName === 'TaskMarker' ||
 								nodeName === 'CommentBlock' || nodeName === 'Comment' ||
-								nodeName === 'Table'
+								nodeName === 'Table' || nodeName.includes('table-sep')
 							) {
 								isIndentableContent = false;
 								return false;
