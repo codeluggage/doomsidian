@@ -94,6 +94,20 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				});
 			}
 
+			private isBlockquoteLine(text: string): boolean {
+				return text.trimStart().startsWith('>');
+			}
+
+			private getBlockquoteLevel(text: string): number {
+				let level = 0;
+				const trimmed = text.trimStart();
+				for (let i = 0; i < trimmed.length; i++) {
+					if (trimmed[i] === '>') level++;
+					else break;
+				}
+				return level;
+			}
+
 			computeDecorations(view: EditorView): DecorationSet {
 				const decorations: Range<Decoration>[] = [];
 				const doc = view.state.doc;
@@ -101,12 +115,15 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 				let lastHeaderLevel = 0;
 				let emptyLineCount = 0;
 				let inListBlock = false;
+				let inBlockquote = false;
+				let blockquoteLevel = 0;
 
 				for (let i = 1; i <= doc.lines; i++) {
 					const line = doc.line(i);
 					const text = line.text;
 					const headerMatch = text.match(/^(#+)\s/);
 					const isListItem = text.match(/^[\s]*([-*+]|\d+\.)\s/);
+					const isBlockquote = this.isBlockquoteLine(text);
 					const isEmpty = !text.trim();
 
 					if (headerMatch) {
@@ -115,6 +132,7 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						lastHeaderLevel = activeHeaderLevel;
 						emptyLineCount = 0;
 						inListBlock = false;
+						inBlockquote = false;
 
 						if (activeHeaderLevel > 0) {
 							const hashtagsStart = line.from;
@@ -144,8 +162,8 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 						}
 					} else if (isEmpty) {
 						emptyLineCount++;
-						// Only reset header level if we're not in a list block and have multiple empty lines
-						if (emptyLineCount > 1 && !inListBlock) {
+						// Only reset header level if we're not in a list block or blockquote and have multiple empty lines
+						if (emptyLineCount > 1 && !inListBlock && !inBlockquote) {
 							activeHeaderLevel = 0;
 						}
 					} else {
@@ -153,14 +171,22 @@ export function headerIndentation(settings: HeaderIndentationSettings): Extensio
 
 						if (isListItem) {
 							inListBlock = true;
+							inBlockquote = false;
 							// Restore header level if we're in a list
+							if (activeHeaderLevel === 0) {
+								activeHeaderLevel = lastHeaderLevel;
+							}
+						} else if (isBlockquote) {
+							inBlockquote = true;
+							blockquoteLevel = this.getBlockquoteLevel(text);
+							// Restore header level if we're in a blockquote
 							if (activeHeaderLevel === 0) {
 								activeHeaderLevel = lastHeaderLevel;
 							}
 						}
 
-						if (activeHeaderLevel > 0 && !isListItem) {
-							// Only apply padding to non-list items
+						if (activeHeaderLevel > 0 && !isListItem && !isBlockquote) {
+							// Only apply padding to non-list and non-blockquote items
 							const indent = activeHeaderLevel * this.currentSettings.indentationWidth;
 							decorations.push(Decoration.line({
 								attributes: {
